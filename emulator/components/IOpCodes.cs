@@ -1,4 +1,4 @@
-namespace nes_csharp.components
+namespace emulator.components
 {
     public interface IOpCodes
     {

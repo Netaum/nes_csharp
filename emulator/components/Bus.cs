@@ -1,9 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace nes_csharp.components
+namespace emulator.components
 {
     public interface IBus
     {
@@ -19,22 +14,19 @@ namespace nes_csharp.components
 
         private int[] memory;
 
-        public Bus(ICpu cpu)
+        public Bus()
         {
             memory = new int[MAX_ADDRESS];
             for(int i = 0; i < MAX_ADDRESS; i++)
             {
                 memory[i] = 0x00;
             }
-
-            cpu.ConnectBus(this); // Connect the CPU to this bus
-
         }
 
         // Implement the methods and properties defined in the IBus interface
         public int Read(int address)
         {
-            if (address < MIN_ADDRESS || address > MAX_ADDRESS)
+            if (address < MIN_ADDRESS || address >= MAX_ADDRESS)
             {
                 return 0;
             }

@@ -1,4 +1,4 @@
-namespace nes_csharp.components
+namespace emulator.components
 {
     public partial class Ocl6502 : IOpCodes
     {
@@ -44,7 +44,7 @@ namespace nes_csharp.components
             SetStatusFlag(Flags6502.Z, (temp & 0x00FF) == 0x00);
             SetStatusFlag(Flags6502.N, (temp & 0x80) == 0x80);
 
-            if (lookupInstructionsTable[opcode].AddressingMode == Implied)
+            if (lookupInstructionsTable[opcode].AddressingMode == Modes.Implied)
             {
                 accumulatorRegister = temp & 0x00FF;
             }
@@ -399,7 +399,7 @@ namespace nes_csharp.components
             int temp = fetchedValue >> 1;
             SetStatusFlag(Flags6502.Z, (temp & 0x00FF) == 0x00);
             SetStatusFlag(Flags6502.N, (temp & 0x80) == 0x80);
-            if (lookupInstructionsTable[opcode].AddressingMode == Implied)
+            if (lookupInstructionsTable[opcode].AddressingMode == Modes.Implied)
             {
                 accumulatorRegister = temp & 0x00FF;
             }
@@ -476,7 +476,7 @@ namespace nes_csharp.components
             SetStatusFlag(Flags6502.Z, (temp & 0x00FF) == 0x00);
             SetStatusFlag(Flags6502.N, (temp & 0x80) == 0x80);
 
-            if (lookupInstructionsTable[opcode].AddressingMode == Implied)
+            if (lookupInstructionsTable[opcode].AddressingMode == Modes.Implied)
             {
                 accumulatorRegister = temp & 0x00FF;
             }
@@ -496,7 +496,7 @@ namespace nes_csharp.components
             SetStatusFlag(Flags6502.Z, (temp & 0x00FF) == 0x00);
             SetStatusFlag(Flags6502.N, (temp & 0x80) == 0x80);
 
-            if (lookupInstructionsTable[opcode].AddressingMode == Implied)
+            if (lookupInstructionsTable[opcode].AddressingMode == Modes.Implied)
             {
                 accumulatorRegister = temp & 0x00FF;
             }
