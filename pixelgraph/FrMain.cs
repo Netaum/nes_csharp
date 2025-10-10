@@ -1,5 +1,7 @@
 using System.Text;
 using emulator.components;
+using emulator.components.Enums;
+using emulator.components.Interfaces;
 
 
 namespace pixelgraph;
@@ -77,10 +79,10 @@ public partial class FrMain : Form
         DrawRegister(rtxt, cpu, Flags6502.C);
         rtxt.SelectionColor = Color.White;
         rtxt.AppendText($"\nPC: ${cpu.ProgramCounter:X4}\n");
-        rtxt.AppendText($"A: ${cpu.A:X2}  [{cpu.A}]\n");
-        rtxt.AppendText($"X: ${cpu.X:X2}  [{cpu.X}]\n");
-        rtxt.AppendText($"Y: ${cpu.Y:X2}  [{cpu.Y}]\n");
-        rtxt.AppendText($"Stack P: ${cpu.SP:X4}\n");
+        rtxt.AppendText($"A: ${cpu.AccumulatorRegister:X2}  [{cpu.AccumulatorRegister}]\n");
+        rtxt.AppendText($"X: ${cpu.XRegister:X2}  [{cpu.XRegister}]\n");
+        rtxt.AppendText($"Y: ${cpu.YRegister:X2}  [{cpu.YRegister}]\n");
+        rtxt.AppendText($"Stack P: ${cpu.StackPointer:X4}\n");
     } 
 
     private static void DrawMemoryPage(RichTextBox rtxt, int address, ICpu cpu)

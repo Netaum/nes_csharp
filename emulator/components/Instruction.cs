@@ -1,3 +1,5 @@
+using emulator.components.Interfaces;
+
 namespace emulator.components
 {
     public record Instruction
@@ -5,9 +7,9 @@ namespace emulator.components
         public string Name { get; init; }
         public int Cycles { get; init; }
         public IAddressingMode AddressingMode { get; init; }
-        public Func<int> Operation { get; init; }
+        public IOpCode Operation { get; init; }
 
-        public Instruction(string name, Func<int> operation, IAddressingMode addressingMode, int cycles)
+        public Instruction(string name, IOpCode operation, IAddressingMode addressingMode, int cycles)
         {
             Name = name;
             Cycles = cycles;

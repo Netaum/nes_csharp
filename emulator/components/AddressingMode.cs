@@ -1,3 +1,5 @@
+using emulator.components.Interfaces;
+
 namespace emulator.components
 {
     public static class Modes
@@ -70,7 +72,7 @@ namespace emulator.components
             cpu.StepProgramCounter();
 
             int address = (highByte << 8) | lowByte;
-            address += cpu.X;
+            address += cpu.XRegister;
 
             cpu.SetAbsoluteAddress(address);
 
@@ -95,7 +97,7 @@ namespace emulator.components
             cpu.StepProgramCounter();
 
             int address = (highByte << 8) | lowByte;
-            address += cpu.Y;
+            address += cpu.YRegister;
 
             cpu.SetAbsoluteAddress(address);
 
@@ -126,7 +128,7 @@ namespace emulator.components
 
         public override int Execute(ICpu cpu)
         {
-            cpu.SetFetchedValue(cpu.A);
+            cpu.SetFetchedValue(cpu.AccumulatorRegister);
             return 0;
         }
     }
@@ -170,8 +172,8 @@ namespace emulator.components
         {
             int pointer = cpu.ReadMemory();
             cpu.StepProgramCounter();
-            int lowByte = cpu.ReadMemory((pointer + cpu.X) & 0x00FF);
-            int highByte = cpu.ReadMemory((pointer + cpu.X + 1) & 0x00FF);
+            int lowByte = cpu.ReadMemory((pointer + cpu.XRegister) & 0x00FF);
+            int highByte = cpu.ReadMemory((pointer + cpu.XRegister + 1) & 0x00FF);
             cpu.SetAbsoluteAddress((highByte << 8) | lowByte);
             return 0;
         }
@@ -188,7 +190,7 @@ namespace emulator.components
             int lowByte = cpu.ReadMemory(pointer & 0x00FF);
             int highByte = cpu.ReadMemory((pointer + 1) & 0x00FF);
             int address = (highByte << 8) | lowByte;
-            address += cpu.Y;
+            address += cpu.YRegister;
             cpu.SetAbsoluteAddress(address);
 
             if ((cpu.AbsoluteAddress & 0xFF00) != (highByte << 8))
@@ -240,7 +242,7 @@ namespace emulator.components
         {
             int address = cpu.ReadMemory();
             cpu.StepProgramCounter();
-            address += cpu.X;
+            address += cpu.XRegister;
             cpu.SetAbsoluteAddress(address & 0x00FF);
             return 0;
         }
@@ -254,16 +256,9 @@ namespace emulator.components
         {
             int address = cpu.ReadMemory();
             cpu.StepProgramCounter();
-            address += cpu.Y;
+            address += cpu.YRegister;
             cpu.SetAbsoluteAddress(address & 0x00FF);
             return 0;
         }
-    }
-
-
-    public interface IAddressingMode
-    {
-        string Name { get; }
-        int Execute(ICpu cpu);
     }
 }
