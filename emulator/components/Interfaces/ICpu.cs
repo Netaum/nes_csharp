@@ -4,14 +4,13 @@ namespace emulator.components.Interfaces
 {
     public interface ICpu
     {
-        void ConnectBus(IBus bus);
         void Clock();
         void Reset();
         void Interrupt();
         void NonMaskableInterrupt();
-        int ReadMemory(int address);
-        int ReadMemory();
-        void WriteMemory(int address, int value, bool readOnly = false);
+        byte ReadMemory(int address, bool readOnly = false);
+        byte ReadMemory();
+        void WriteMemory(int address, byte value);
         void LoadProgram(byte[] program, int startAddress);
         Dictionary<int, string> Disassemble(int start, int stop);
         bool GetStatusFlag(Flags6502 flag);
@@ -26,8 +25,7 @@ namespace emulator.components.Interfaces
         int AbsoluteAddress { get; set; }
         int RelativeAddress { get; set; }
         int FetchedValue { get; set; }
-        int Cycles { get; set; }
-        
+        int Cycles { get; set; }        
         void StepProgramCounter(int offset);
         void StepProgramCounter();
         Instruction CurrentInstruction { get; }
