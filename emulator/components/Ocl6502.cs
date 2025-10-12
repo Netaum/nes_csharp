@@ -6,7 +6,6 @@ namespace emulator.components
     public partial class Ocl6502 : ICpu
     {
         private IBus? bus;
-
         private int fetchedValue = 0x00;
         private int absoluteAddress = 0x00;
         private int relativeAddress = 0x00;
@@ -19,7 +18,6 @@ namespace emulator.components
         private int yRegister;
         private int programCounter;
         private int stackPointer;
-        public int ProgramCounter => programCounter;
         public int AccumulatorRegister
         {
             get => accumulatorRegister;
@@ -43,29 +41,46 @@ namespace emulator.components
             set => yRegister = value;
         }
 
+        public int StackPointer
+        {
+            get => stackPointer;
+            set => stackPointer = value;
+        }
+
+        public int Cycles
+        {
+            get => cycles;
+            set => cycles = value;
+        }
+
+        public int FetchedValue
+        {
+            get => fetchedValue;
+            set => fetchedValue = value;
+        }
+
+        public int AbsoluteAddress
+        {
+            get => absoluteAddress;
+            set => absoluteAddress = value;
+        }
+
+        public int RelativeAddress
+        {
+            get => relativeAddress;
+            set => relativeAddress = value;
+        }
+
+        public int ProgramCounter
+        {
+            get => programCounter;
+            set => programCounter = value;
+        }
+
         public int OpCode => opcode;
-        public int StackPointer => stackPointer;
-        public int AbsoluteAddress => absoluteAddress;
         public Instruction CurrentInstruction { get; private set; }
+        public bool Complete => cycles == 0;
 
-        public void IncCycles()
-        {
-            cycles++;
-        }
-
-        public void DecCycles()
-        {
-            cycles--;
-        }
-
-        public void PushStackPointer() => stackPointer++;
-        public void PopStackPointer() => stackPointer--;
-        public void SetStackPointer(int value) => stackPointer = value;
-
-        public int GetRelativeAddress()
-        {
-            return relativeAddress;
-        }
 
         public Ocl6502()
         {
@@ -253,16 +268,11 @@ namespace emulator.components
         public Dictionary<int, string> Disassemble(int start, int stop)
         {
             int address = start;
-            int value = 0x00;
-            int lowByte = 0x00;
-            int highByte = 0x00;
-            int lineAddress = 0x0000;
-
             var disassembly = new Dictionary<int, string>();
 
             while (address < stop)
             {
-                lineAddress = address;
+                int lineAddress = address;
                 string sInst = $"${address:X4}: ";
                 int opcode = ReadMemory(address);
                 Instruction instruction = lookupInstructionsTable[opcode];
@@ -270,6 +280,9 @@ namespace emulator.components
                 address++;
                 sInst += $"{instruction.Name} ";
 
+                int value;
+                int lowByte;
+                int highByte;
                 if (instruction.AddressingMode == Modes.Implied)
                 {
                     sInst += " {IMP}";
@@ -291,7 +304,6 @@ namespace emulator.components
                 {
                     lowByte = ReadMemory(address);
                     address++;
-                    highByte = 0x00;
                     sInst += $"${lowByte:X2},X {{ZPX}}";
                 }
                 else if (instruction.AddressingMode == Modes.ZeroPageY)
@@ -352,9 +364,9 @@ namespace emulator.components
                 {
                     value = ReadMemory(address);
                     address++;
-                    sInst += $"${value:X2} [$ {address + value:X4}] {{REL}}";
+                    sInst += $"${value:X2} [${address + value:X4}] {{REL}}";
                 }
-                
+
                 disassembly[lineAddress] = sInst;
             }       
 
@@ -377,26 +389,6 @@ namespace emulator.components
         public void StepProgramCounter()
         {
             StepProgramCounter(1);
-        }
-
-        public void SetProgramCounter(int address)
-        {
-            programCounter = address;
-        }
-
-        public void SetAbsoluteAddress(int address)
-        {
-            absoluteAddress = address;
-        }
-
-        public void SetFetchedValue(int value)
-        {
-            fetchedValue = value;
-        }
-
-        public void SetRelativeAddress(int value)
-        {
-            relativeAddress = value;
         }
     }
 }

@@ -53,18 +53,19 @@
             this.rtxtMemPg2.Text = "$0000: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ";
             this.Controls.Add(this.rtxtMemPg2);
             // 
-            // button1
+            // btnClock
             // 
-            this.button1 = new System.Windows.Forms.Button();
-            this.button1.Location = new System.Drawing.Point(6, 565);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(100, 30);
-            this.button1.TabIndex = 0;
-            this.button1.ForeColor = System.Drawing.Color.FromArgb(204, 204, 204);
-            this.button1.BackColor = System.Drawing.Color.FromArgb(51, 51, 51);
-            this.button1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button1.Text = "Button";
-            this.Controls.Add(this.button1);
+            this.btnClock = new System.Windows.Forms.Button();
+            this.btnClock.Location = new System.Drawing.Point(6, 565);
+            this.btnClock.Name = "btnClock";
+            this.btnClock.Size = new System.Drawing.Size(100, 30);
+            this.btnClock.TabIndex = 0;
+            this.btnClock.ForeColor = System.Drawing.Color.FromArgb(204, 204, 204);
+            this.btnClock.BackColor = System.Drawing.Color.FromArgb(51, 51, 51);
+            this.btnClock.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnClock.Text = "Clock";
+            this.Controls.Add(this.btnClock);
+            this.btnClock.Click += new System.EventHandler(this.BtnClock_Click);
             // 
             // rtxtCpu
             // 
@@ -95,7 +96,7 @@
             this.Controls.AddRange(new System.Windows.Forms.Control[] {
                 this.rtxtMemPg1,
                 this.rtxtMemPg2,
-                this.button1,
+                this.btnClock,
                 this.rtxtCpu,
                 this.rtxtCode
             });
@@ -107,7 +108,7 @@
         // Control declarations
         private System.Windows.Forms.RichTextBox rtxtMemPg1;
         private System.Windows.Forms.RichTextBox rtxtMemPg2;
-        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button btnClock;
         private System.Windows.Forms.RichTextBox rtxtCpu;
         private System.Windows.Forms.RichTextBox rtxtCode;
     }

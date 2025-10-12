@@ -20,25 +20,50 @@ public partial class FrMain : Form
 
         string rom = "A2 0A 8E 00 00 A2 03 8E 01 00 AC 00 00 A9 00 18 6D 01 00 88 D0 FA 8D 02 00 EA EA EA";
         var bytes = rom.Split(' ').Select(s => Convert.ToByte(s, 16)).ToArray();
+        //var bytes = File.ReadAllBytes("h:\\dev\\nes_csharp\\roms\\nestest.nes");
         _cpu.LoadProgram(bytes, 0x8000);
+        _cpu.WriteMemory(0xFFFC, 0x00);
+        _cpu.WriteMemory(0xFFFD, 0x80);
+        _cpu.Reset();
+        Draw();
+    }
 
+    private void Draw()
+    {
         DrawMemoryPage(rtxtMemPg1, 0x0000, _cpu);
         DrawMemoryPage(rtxtMemPg2, 0x8000, _cpu);
         DrawCpu(rtxtCpu, _cpu);
-        var memoryMark = 0x8000;
-        var code = _cpu.Disassemble(memoryMark, 0xFFFF);
-        DrawCode(rtxtCode, code, memoryMark, 34);
+        var code = _cpu.Disassemble(0x0000, 0xFFFF);
+        DrawCode(rtxtCode, code, _cpu.ProgramCounter, 34);
     }
 
-    private static void DrawCode(RichTextBox rtxt, Dictionary<int, string> code, int memoryMark, int lines)
+    private void BtnClock_Click(object sender, EventArgs e)
+    {
+        do
+        {
+            _cpu.Clock();
+        } while (!_cpu.Complete);
+        
+        Draw();
+    }
+
+    private static void DrawCode(RichTextBox rtxt, Dictionary<int, string> code, int memoryMark, int numberOfLines)
     {
         SetOutput(rtxt, _font1);
         int outputedCode = 0;
-        int currentMemory = memoryMark;
-        while (outputedCode < lines && currentMemory < 0xFFFF)
+        int currentMemory = memoryMark - (numberOfLines / 2);
+        while (outputedCode < numberOfLines && currentMemory < 0xFFFF)
         {
             if (code.ContainsKey(currentMemory))
             {
+                if(currentMemory == memoryMark)
+                {
+                    rtxt.SelectionColor = Color.Yellow;
+                }
+                else
+                {
+                    rtxt.SelectionColor = Color.White;
+                }
                 rtxt.AppendText(code[currentMemory] + "\n");
                 outputedCode++;
             }

@@ -18,32 +18,22 @@ namespace emulator.components.Interfaces
         void SetStatusFlag(Flags6502 flag, bool set);
         Instruction[] Instructions { get; }
         int Fetch();
-        int ProgramCounter { get; }
+        int ProgramCounter { get; set; }
         int AccumulatorRegister { get; set; }
         int XRegister { get; set; }
         int YRegister { get; set; }
-        int StackPointer { get; }
-        int AbsoluteAddress { get; }
+        int StackPointer { get; set; }
+        int AbsoluteAddress { get; set; }
+        int RelativeAddress { get; set; }
+        int FetchedValue { get; set; }
+        int Cycles { get; set; }
+        
         void StepProgramCounter(int offset);
-        void SetProgramCounter(int address);
         void StepProgramCounter();
-        void SetAbsoluteAddress(int address);
-        void SetRelativeAddress(int address);
-        int GetRelativeAddress();
-        void SetFetchedValue(int value);
         Instruction CurrentInstruction { get; }
-
-        void IncCycles();
-        void DecCycles();
-
         int Status { get; set; }
-
         int OpCode { get; }
-
-        void PopStackPointer();
-        void PushStackPointer();
-
-        void SetStackPointer(int value);
+        bool Complete { get; }
 
     }
 }
