@@ -116,6 +116,7 @@ namespace emulator.components
         public void ConnectCpu(ICpu cpu)
         {
             this.cpu = cpu;
+            this.cpu.ConnectBus(this);
         }
 
         public void ConnectPpu(IPpu ppu)

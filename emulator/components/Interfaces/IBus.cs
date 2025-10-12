@@ -8,5 +8,9 @@ namespace emulator.components.Interfaces
         void InsertCartridge(ICartridge cartridge);
         void Reset();
         void Clock();
+
+        ICpu Cpu { get; }
+        IPpu Ppu { get; }
+        ICartridge Cartridge { get; }
     }
 }

@@ -15,8 +15,16 @@ static class Program
         ApplicationConfiguration.Initialize();
         var cpu = new Ocl6502();
         var bus = new Bus();
-        cpu.ConnectBus(bus);
+        var ppu = new Ocl2C02();
+        var cardridge = new Cartridge();
 
-        Application.Run(new FrMain(cpu));
+        var nestest = File.ReadAllBytes("h:\\dev\\nes_csharp\\roms\\nestest.nes");
+        cardridge.LoadCartridge(nestest);
+
+        bus.ConnectCpu(cpu);
+        bus.ConnectPpu(ppu);
+        bus.InsertCartridge(cardridge);
+
+        Application.Run(new FrMain(bus));
     }
 }

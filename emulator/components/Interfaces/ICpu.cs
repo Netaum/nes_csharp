@@ -28,6 +28,7 @@ namespace emulator.components.Interfaces
         int Cycles { get; set; }        
         void StepProgramCounter(int offset);
         void StepProgramCounter();
+        void ConnectBus(IBus bus);
         Instruction CurrentInstruction { get; }
         int Status { get; set; }
         int OpCode { get; }

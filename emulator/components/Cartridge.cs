@@ -75,7 +75,7 @@ namespace emulator.components
                     throw new NotImplementedException($"Mapper type {mapperType} not supported");
             }
 
-            int fileType = 0;
+            int fileType = 1;
 
             if (fileType == 0)
             {
