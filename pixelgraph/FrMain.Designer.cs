@@ -17,6 +17,9 @@
 
         private void InitializeComponent()
         {
+            this.pictureBox = new PictureBox();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox)).BeginInit();
+
             this.SuspendLayout();
             // 
             // FrMain
@@ -29,34 +32,10 @@
             this.BackColor = System.Drawing.Color.FromArgb(37, 37, 38);
             this.ForeColor = System.Drawing.Color.FromArgb(204, 204, 204);
             // 
-            // rtxtMemPg1
-            // 
-            this.rtxtMemPg1 = new System.Windows.Forms.RichTextBox();
-            this.rtxtMemPg1.Location = new System.Drawing.Point(5, 8);
-            this.rtxtMemPg1.Name = "rtxtMemPg1";
-            this.rtxtMemPg1.Size = new System.Drawing.Size(535, 275);
-            this.rtxtMemPg1.TabIndex = 0;
-            this.rtxtMemPg1.ForeColor = System.Drawing.Color.FromArgb(204, 204, 204);
-            this.rtxtMemPg1.BackColor = System.Drawing.Color.FromArgb(30, 30, 30);
-            this.rtxtMemPg1.Text = "$0000: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ";
-            this.Controls.Add(this.rtxtMemPg1);
-            // 
-            // rtxtMemPg2
-            // 
-            this.rtxtMemPg2 = new System.Windows.Forms.RichTextBox();
-            this.rtxtMemPg2.Location = new System.Drawing.Point(5, 286);
-            this.rtxtMemPg2.Name = "rtxtMemPg2";
-            this.rtxtMemPg2.Size = new System.Drawing.Size(535, 275);
-            this.rtxtMemPg2.TabIndex = 1;
-            this.rtxtMemPg2.ForeColor = System.Drawing.Color.FromArgb(204, 204, 204);
-            this.rtxtMemPg2.BackColor = System.Drawing.Color.FromArgb(30, 30, 30);
-            this.rtxtMemPg2.Text = "$0000: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ";
-            this.Controls.Add(this.rtxtMemPg2);
-            // 
             // btnClock
             // 
             this.btnClock = new System.Windows.Forms.Button();
-            this.btnClock.Location = new System.Drawing.Point(6, 565);
+            this.btnClock.Location = new System.Drawing.Point(10, 565);
             this.btnClock.Name = "btnClock";
             this.btnClock.Size = new System.Drawing.Size(100, 30);
             this.btnClock.TabIndex = 0;
@@ -64,52 +43,37 @@
             this.btnClock.BackColor = System.Drawing.Color.FromArgb(51, 51, 51);
             this.btnClock.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnClock.Text = "Clock";
-            this.Controls.Add(this.btnClock);
             this.btnClock.Click += new System.EventHandler(this.BtnClock_Click);
-            // 
-            // rtxtCpu
-            // 
-            this.rtxtCpu = new System.Windows.Forms.RichTextBox();
-            this.rtxtCpu.Location = new System.Drawing.Point(544, 8);
-            this.rtxtCpu.Name = "rtxtCpu";
-            this.rtxtCpu.Size = new System.Drawing.Size(248, 107);
-            this.rtxtCpu.TabIndex = 0;
-            this.rtxtCpu.ForeColor = System.Drawing.Color.FromArgb(204, 204, 204);
-            this.rtxtCpu.BackColor = System.Drawing.Color.FromArgb(30, 30, 30);
-            this.rtxtCpu.Text = "";
-            this.Controls.Add(this.rtxtCpu);
-            // 
-            // rtxtCode
-            // 
-            this.rtxtCode = new System.Windows.Forms.RichTextBox();
-            this.rtxtCode.Location = new System.Drawing.Point(544, 117);
-            this.rtxtCode.Name = "rtxtCode";
-            this.rtxtCode.Size = new System.Drawing.Size(248, 444);
-            this.rtxtCode.TabIndex = 0;
-            this.rtxtCode.ForeColor = System.Drawing.Color.FromArgb(204, 204, 204);
-            this.rtxtCode.BackColor = System.Drawing.Color.FromArgb(30, 30, 30);
-            this.rtxtCode.Text = "RichTextBox";
-            this.Controls.Add(this.rtxtCode);
+            this.Controls.Add(this.btnClock);
+            ///
+            /// PictureBox
+            /// 
+            this.pictureBox.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.pictureBox.BackColor = System.Drawing.Color.Blue;
+            this.pictureBox.Location = new System.Drawing.Point(10, 10);
+            this.pictureBox.Name = "pictureBox";
+            this.pictureBox.Size = new System.Drawing.Size(640, 480);
+            this.pictureBox.TabIndex = 0;
+            this.pictureBox.TabStop = false;
+            //this.pictureBox.SizeChanged += new System.EventHandler(this.pictureBox1_SizeChanged);
+            //this.pictureBox.MouseDown += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseDown);
             // 
             // Form controls collection
             // 
             this.Controls.AddRange(new System.Windows.Forms.Control[] {
-                this.rtxtMemPg1,
-                this.rtxtMemPg2,
                 this.btnClock,
-                this.rtxtCpu,
-                this.rtxtCode
+                this.pictureBox
             });
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox)).EndInit();
             this.ResumeLayout(false);
         }
 
         #endregion
 
         // Control declarations
-        private System.Windows.Forms.RichTextBox rtxtMemPg1;
-        private System.Windows.Forms.RichTextBox rtxtMemPg2;
         private System.Windows.Forms.Button btnClock;
-        private System.Windows.Forms.RichTextBox rtxtCpu;
-        private System.Windows.Forms.RichTextBox rtxtCode;
+        private System.Windows.Forms.PictureBox pictureBox;
     }
 }
