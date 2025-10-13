@@ -1,8 +1,10 @@
 using emulator.components.Interfaces;
+using System.Drawing;
+using System.Runtime.Versioning;
 
 namespace emulator.components
 {
-    public class Ocl2C02: IPpu
+    public class Ocl2C02 : IPpu
     {
         private const int MEMORY_MASK = 0x3FFF;
         private ICartridge? cartridge;
@@ -10,6 +12,35 @@ namespace emulator.components
         private int[,] nameTable = new int[2, 1024];
         private int[] paletteTable = new int[32];
         private int[,] patternTable = new int[2, 4096];
+
+        private Bitmap spriteScreen;
+        private Bitmap[] spriteNameTables;
+        private Bitmap[] spritePatternTables;
+        private Color[] screenPalette;
+
+        private bool frameComplete;
+        private int scanLine;
+        private int cycle;
+
+
+        [SupportedOSPlatform("windows")]
+        public Ocl2C02()
+        {
+            spriteScreen = new Bitmap(256, 240);
+            spriteNameTables =
+            [
+                new Bitmap(256, 240),
+                new Bitmap(256, 240)
+            ];
+            spritePatternTables =
+            [
+                new Bitmap(128, 128),
+                new Bitmap(128, 128)
+            ];
+
+            screenPalette = new Color[0x40];
+            InitPallete();
+        }
 
         public ICartridge Cartridge
         {
@@ -22,9 +53,23 @@ namespace emulator.components
             }
         }
 
+        [SupportedOSPlatform("windows")]
         public void Clock()
         {
-            throw new NotImplementedException();
+            var i = new Random().Next(0, 2);
+            spriteScreen.SetPixel(int.Clamp(cycle, 0, 255), int.Clamp(scanLine, 0, 239), i == 0 ? screenPalette[0x3F] : screenPalette[0x30]);
+            cycle++;
+            if (cycle >= 341)
+            {
+                cycle = 0;
+                scanLine++;
+
+                if (scanLine >= 261)
+                {
+                    scanLine = -1;
+                    frameComplete = true;
+                }
+            }
         }
 
         public byte CpuRead(int address, bool readOnly = false)
@@ -32,7 +77,7 @@ namespace emulator.components
             byte data = 0x00;
 
             // Implement CPU read logic
-            switch(address)
+            switch (address)
             {
                 case 0x0000: // Control 
                     break;
@@ -57,7 +102,7 @@ namespace emulator.components
 
         public void CpuWrite(int address, byte value)
         {
-            switch(address)
+            switch (address)
             {
                 case 0x0000: // Control 
                     break;
@@ -90,7 +135,7 @@ namespace emulator.components
 
             var (success, mappedAddress) = Cartridge.PpuRead(address);
 
-            if(success)
+            if (success)
             {
                 return data;
             }
@@ -102,7 +147,7 @@ namespace emulator.components
         {
             address &= MEMORY_MASK;
 
-            if(Cartridge.PpuWrite(address, value))
+            if (Cartridge.PpuWrite(address, value))
             {
                 return;
             }
@@ -111,6 +156,99 @@ namespace emulator.components
         public void Reset()
         {
             throw new NotImplementedException();
+        }
+
+        public Bitmap GetScreen()
+        {
+            return spriteScreen;
+        }
+
+        public Bitmap GetNameTable(int i)
+        {
+            return spriteNameTables[i];
+        }
+
+        public Bitmap GetPatternTable(int i)
+        {
+            return spritePatternTables[i];
+        }
+
+        public bool FrameComplete
+        {
+            get => frameComplete;
+            set => frameComplete = value;
+        }
+
+
+        private void InitPallete()
+        {
+            screenPalette[0x00] = Color.FromArgb(84, 84, 84);
+            screenPalette[0x01] = Color.FromArgb(0, 30, 116);
+            screenPalette[0x02] = Color.FromArgb(8, 16, 144);
+            screenPalette[0x03] = Color.FromArgb(48, 0, 136);
+            screenPalette[0x04] = Color.FromArgb(68, 0, 100);
+            screenPalette[0x05] = Color.FromArgb(92, 0, 48);
+            screenPalette[0x06] = Color.FromArgb(84, 4, 0);
+            screenPalette[0x07] = Color.FromArgb(60, 24, 0);
+            screenPalette[0x08] = Color.FromArgb(32, 42, 0);
+            screenPalette[0x09] = Color.FromArgb(8, 58, 0);
+            screenPalette[0x0A] = Color.FromArgb(0, 64, 0);
+            screenPalette[0x0B] = Color.FromArgb(0, 60, 0);
+            screenPalette[0x0C] = Color.FromArgb(0, 50, 60);
+            screenPalette[0x0D] = Color.FromArgb(0, 0, 0);
+            screenPalette[0x0E] = Color.FromArgb(0, 0, 0);
+            screenPalette[0x0F] = Color.FromArgb(0, 0, 0);
+
+            screenPalette[0x10] = Color.FromArgb(152, 150, 152);
+            screenPalette[0x11] = Color.FromArgb(8, 76, 196);
+            screenPalette[0x12] = Color.FromArgb(48, 50, 236);
+            screenPalette[0x13] = Color.FromArgb(92, 30, 228);
+            screenPalette[0x14] = Color.FromArgb(136, 20, 176);
+            screenPalette[0x15] = Color.FromArgb(160, 20, 100);
+            screenPalette[0x16] = Color.FromArgb(152, 34, 32);
+            screenPalette[0x17] = Color.FromArgb(120, 60, 0);
+            screenPalette[0x18] = Color.FromArgb(84, 90, 0);
+            screenPalette[0x19] = Color.FromArgb(40, 114, 0);
+            screenPalette[0x1A] = Color.FromArgb(8, 124, 0);
+            screenPalette[0x1B] = Color.FromArgb(0, 118, 40);
+            screenPalette[0x1C] = Color.FromArgb(0, 102, 120);
+            screenPalette[0x1D] = Color.FromArgb(0, 0, 0);
+            screenPalette[0x1E] = Color.FromArgb(0, 0, 0);
+            screenPalette[0x1F] = Color.FromArgb(0, 0, 0);
+
+            screenPalette[0x20] = Color.FromArgb(236, 238, 236);
+            screenPalette[0x21] = Color.FromArgb(76, 154, 236);
+            screenPalette[0x22] = Color.FromArgb(120, 124, 236);
+            screenPalette[0x23] = Color.FromArgb(176, 98, 236);
+            screenPalette[0x24] = Color.FromArgb(228, 84, 236);
+            screenPalette[0x25] = Color.FromArgb(236, 88, 180);
+            screenPalette[0x26] = Color.FromArgb(236, 106, 100);
+            screenPalette[0x27] = Color.FromArgb(212, 136, 32);
+            screenPalette[0x28] = Color.FromArgb(160, 170, 0);
+            screenPalette[0x29] = Color.FromArgb(116, 196, 0);
+            screenPalette[0x2A] = Color.FromArgb(76, 208, 32);
+            screenPalette[0x2B] = Color.FromArgb(56, 204, 108);
+            screenPalette[0x2C] = Color.FromArgb(56, 180, 204);
+            screenPalette[0x2D] = Color.FromArgb(60, 60, 60);
+            screenPalette[0x2E] = Color.FromArgb(0, 0, 0);
+            screenPalette[0x2F] = Color.FromArgb(0, 0, 0);
+
+            screenPalette[0x30] = Color.FromArgb(236, 238, 236);
+            screenPalette[0x31] = Color.FromArgb(168, 204, 236);
+            screenPalette[0x32] = Color.FromArgb(188, 188, 236);
+            screenPalette[0x33] = Color.FromArgb(212, 178, 236);
+            screenPalette[0x34] = Color.FromArgb(236, 174, 236);
+            screenPalette[0x35] = Color.FromArgb(236, 174, 212);
+            screenPalette[0x36] = Color.FromArgb(236, 180, 176);
+            screenPalette[0x37] = Color.FromArgb(228, 196, 144);
+            screenPalette[0x38] = Color.FromArgb(204, 210, 120);
+            screenPalette[0x39] = Color.FromArgb(180, 222, 120);
+            screenPalette[0x3A] = Color.FromArgb(168, 226, 144);
+            screenPalette[0x3B] = Color.FromArgb(152, 226, 180);
+            screenPalette[0x3C] = Color.FromArgb(160, 214, 228);
+            screenPalette[0x3D] = Color.FromArgb(160, 162, 160);
+            screenPalette[0x3E] = Color.FromArgb(0, 0, 0);
+            screenPalette[0x3F] = Color.FromArgb(0, 0, 0);
         }
     }
 }

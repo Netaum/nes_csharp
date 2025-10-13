@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Drawing;
 
 namespace emulator.components.Interfaces
 {
@@ -17,5 +14,10 @@ namespace emulator.components.Interfaces
         void InsertCartridge(ICartridge cartridge);
         void Reset();
         void Clock();
+
+        Bitmap GetScreen();
+        Bitmap GetNameTable(int i);
+        Bitmap GetPatternTable(int i);
+        bool FrameComplete { get; set; }
     }
 }

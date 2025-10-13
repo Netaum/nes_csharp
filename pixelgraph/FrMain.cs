@@ -19,21 +19,7 @@ public partial class FrMain : Form
 
         _bus = bus;
         _bus.Reset();
-
-        string rom = "A2 0A 8E 00 00 A2 03 8E 01 00 AC 00 00 A9 00 18 6D 01 00 88 D0 FA 8D 02 00 EA EA EA";
-        var bytes = rom.Split(' ').Select(s => Convert.ToByte(s, 16)).ToArray();
         Render();
-    }
-
-    private void Draw()
-    {
-        /*
-        DrawMemoryPage(rtxtMemPg1, 0x0000, _bus.Cpu);
-        DrawMemoryPage(rtxtMemPg2, 0x8000, _bus.Cpu);
-        DrawCpu(rtxtCpu, _bus.Cpu);
-        var code = _bus.Cpu.Disassemble(0x0000, 0xFFFF);
-        DrawCode(rtxtCode, code, _bus.Cpu.ProgramCounter, 34);
-        */
     }
 
     private static void DrawMemoryPage(float x, float y, SizeF fontSize, int address, ICpu cpu, Graphics graphics)
@@ -53,7 +39,7 @@ public partial class FrMain : Form
             y += fontSize.Height + 2;
         }
     }
-    
+
     private static void DrawRegister(float x, float y, ICpu cpu, Flags6502 flag, Graphics graphics)
     {
         var color = cpu.GetStatusFlag(flag) ? Brushes.Red : Brushes.Yellow;
@@ -131,36 +117,48 @@ public partial class FrMain : Form
         float x = 10f;
         float y = 10f;
 
-        DrawMemoryPage(x, y, size, 0x0000, _bus.Cpu, gfx);
-        y = y + ((size.Height + 2) * 16) + 4;
-        DrawMemoryPage(x, y, size, 0x8000, _bus.Cpu, gfx);
+        //DrawMemoryPage(x, y, size, 0x0000, _bus.Cpu, gfx);
+        y = y + ((size.Height + 2) * 18);
+        //DrawMemoryPage(x, y, size, 0x8000, _bus.Cpu, gfx);
 
         y = 10f;
-        x = size.Width * 58;
+        x = size.Width * 60;
         DrawCpu(x, y, size, _bus.Cpu, gfx);
 
-        y += (size.Height + 2) * 7 + 2;
+        y += (size.Height + 2) * 7;
 
         var code = _bus.Cpu.Disassemble(0x0000, 0xFFFF);
-        DrawCode(x, y, size, code, 0x0000, 25, gfx);
+        DrawCode(x, y, size, code, _bus.Cpu.ProgramCounter, 27, gfx);
+
+        var img = _bus.Ppu.GetScreen();
+
+        gfx.DrawImage(img, 10f, 10f);
 
         pictureBox.Image?.Dispose();
         pictureBox.Image = (Bitmap)bmp.Clone();
     }
 
-    private void BtnClock_Click(object sender, EventArgs e)
+    private async void BtnClock_Click(object sender, EventArgs e)
     {
-        do
-        {
-            _bus.Clock();
-        } while (!_bus.Cpu.Complete);
-
-        do
-        {
-            _bus.Clock();
-        } while (_bus.Cpu.Complete);
-
-        Draw();
+        await Clock();
     }
-    
+
+    private async Task Clock()
+    {
+        await Task.Run(() =>
+        {
+            while (true)
+            {
+                do
+                {
+                    _bus.Clock();
+                } while (!_bus.Ppu.FrameComplete);
+                _bus.Ppu.FrameComplete = false;
+
+                Render();
+                //Thread.Sleep(5);
+            }
+        });
+    }
+
 }

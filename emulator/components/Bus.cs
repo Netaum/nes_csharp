@@ -71,11 +71,11 @@ namespace emulator.components
         // Implement the methods and properties defined in the IBus interface
         public byte CpuRead(int address, bool readOnly = false)
         {
-            var (cartridgeSuccess, _) = Cartridge.CpuRead(address);
+            var (cartridgeSuccess, cartridgeData) = Cartridge.CpuRead(address);
             
             if (cartridgeSuccess)
             {
-                return 0x00;
+                return cartridgeData;
             }
 
             if (address >= MIN_ADDRESS && address <= MAX_ADDRESS)
