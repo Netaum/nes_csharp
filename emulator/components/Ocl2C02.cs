@@ -4,13 +4,14 @@ using System.Runtime.Versioning;
 
 namespace emulator.components
 {
+    [SupportedOSPlatform("windows")]
     public class Ocl2C02 : IPpu
     {
         private const int MEMORY_MASK = 0x3FFF;
         private ICartridge? cartridge;
 
         private int[,] nameTable = new int[2, 1024];
-        private int[] paletteTable = new int[32];
+        private byte[] paletteTable = new byte[32];
         private int[,] patternTable = new int[2, 4096];
 
         private Bitmap spriteScreen;
@@ -53,7 +54,6 @@ namespace emulator.components
             }
         }
 
-        [SupportedOSPlatform("windows")]
         public void Clock()
         {
             var i = new Random().Next(0, 2);
@@ -139,7 +139,24 @@ namespace emulator.components
             {
                 return data;
             }
+            else if (address >= 0x0000 && address <= 0x1FFF)
+            {
+                data = patternTable[]
+            }
+            else if (address >= 0x2000 && address <= 0x3EFF)
+            {
 
+            }
+            else if (address >= 0x3F00 && address <= 0x3FFF)
+            {
+                address &= 0x001F;
+                if (address == 0x0010) address = 0x0000;
+                if (address == 0x0014) address = 0x0004;
+                if (address == 0x0018) address = 0x0008;
+                if (address == 0x001C) address = 0x000C;
+
+                data = paletteTable[address];
+            }
             return data;
         }
 
@@ -150,6 +167,24 @@ namespace emulator.components
             if (Cartridge.PpuWrite(address, value))
             {
                 return;
+            }
+            else if (address >= 0x0000 && address <= 0x1FFF)
+            {
+
+            }
+            else if (address >= 0x2000 && address <= 0x3EFF)
+            {
+
+            }
+            else if (address >= 0x3F00 && address <= 0x3FFF)
+            {
+                address &= 0x001F;
+                if (address == 0x0010) address = 0x0000;
+                if (address == 0x0014) address = 0x0004;
+                if (address == 0x0018) address = 0x0008;
+                if (address == 0x001C) address = 0x000C;
+
+                paletteTable[address] = value;
             }
         }
 
@@ -168,8 +203,42 @@ namespace emulator.components
             return spriteNameTables[i];
         }
 
-        public Bitmap GetPatternTable(int i)
+        private Color GetColorFromPaletteRam(int palette, int pixel)
         {
+            var colorAddress = 0x3F00 + (palette << 2) + pixel;
+            byte value = PpuRead(colorAddress);
+            return screenPalette[value];
+        }
+
+        public Bitmap GetPatternTable(int i, int palette)
+        {
+
+            for(int tileX = 0; i < 16; tileX++)
+            {
+                for(int tileY = 0; tileY < 16; tileY++)
+                {
+                    int offset = tileY * 256 + tileX * 16;
+
+                    for(int row = 0; row < 8; row++)
+                    {
+                        int address = i * 0x1000 + offset + row;
+                        byte tileLSB = PpuRead(address);
+                        byte tileMSB = PpuRead(address + 8);
+
+                        for(int col = 0; col < 8; col++)
+                        {
+                            int pixel = (tileLSB & 0x01) + (tileMSB & 0x01);
+                            tileLSB >>= 1;
+                            tileMSB >>= 1;
+
+                            int pixelX = tileX * 8 + (7 - col);
+                            int pixelY = tileY * 8 + row;
+                            spritePatternTables[i].SetPixel(pixelX, pixelY, GetColorFromPaletteRam(palette, pixel));
+                        }
+                    }
+                }
+            }
+
             return spritePatternTables[i];
         }
 

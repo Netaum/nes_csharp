@@ -17,7 +17,7 @@ namespace emulator.components.Interfaces
 
         Bitmap GetScreen();
         Bitmap GetNameTable(int i);
-        Bitmap GetPatternTable(int i);
+        Bitmap GetPatternTable(int i, int palette);
         bool FrameComplete { get; set; }
     }
 }
