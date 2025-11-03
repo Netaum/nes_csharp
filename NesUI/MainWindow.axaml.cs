@@ -1,9 +1,11 @@
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Text;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Emulator.Components;
+using Emulator.Debug;
 
 namespace NesUI;
 
@@ -82,12 +84,13 @@ public partial class MainWindow : Window
         Canvas.SetLeft(page8, 8);
         Canvas.SetTop(page8, 300);
 
+        var code = Disassemble.FromMemory(bus.Cpu, 0x0000, 0xFFFF);
+
+        var splice = code.Where(w => w.Key >= 0x8000)
+                         .Take(20)
+                         .ToDictionary(k => k.Key, v => v.Value);
+        
         MainWindowCanvas.Children.Add(page0);
         MainWindowCanvas.Children.Add(page8);
     }
-    /*
-    <StackPanel Width="360" Height="250" Orientation="Vertical" Background="Blue" Canvas.Left="8" Canvas.Top="8" Spacing="2" >
-            <TextBlock Text=" 0000: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00" Foreground="White" FontSize="14" Height="16" FontFamily="Courier" />
-        </StackPanel>
-    */
 }

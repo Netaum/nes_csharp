@@ -266,6 +266,12 @@ namespace Emulator.Components
             return instructions;
         }
 
+        public Instruction GetInstruction(int address)
+        {
+            int opcode = ReadMemory(address);
+            return lookupInstructionsTable[opcode];
+        }
+        
         public void LoadProgram(byte[] program, int startAddress)
         {
             for(int i = 0; i < program.Length; i++)
