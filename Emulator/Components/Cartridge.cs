@@ -96,6 +96,7 @@ namespace Emulator.Components
 
                 Array.Copy(cartridgeData, startData, programMemory, 0, programMemory.Length);
                 Array.Copy(cartridgeData, startData + programMemory.Length, characterMemory, 0, characterMemory.Length);
+                return;
 
             }
 

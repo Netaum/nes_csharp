@@ -1,7 +1,6 @@
 using CustomTypes;
 using Emulator.Components.Interfaces;
 using System.Drawing;
-using System.Runtime.Versioning;
 
 namespace Emulator.Components
 {
@@ -23,8 +22,6 @@ namespace Emulator.Components
         private int scanLine;
         private int cycle;
 
-
-        [SupportedOSPlatform("windows")]
         public Ocl2C02()
         {
             spriteScreen = BaseBitmap.Create(256, 240);

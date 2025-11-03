@@ -1,32 +1,93 @@
+using System.Collections;
+using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using Avalonia.Controls;
 using Avalonia.Layout;
+using Emulator.Components;
 
 namespace NesUI;
 
 public partial class MainWindow : Window
 {
+    private Bus? _bus = null!;
+
+    [MemberNotNull(nameof(_bus))]
+    public void SetBus(Bus bus)
+    {
+        _bus = bus;
+        _bus.Reset();
+    }
+
     public MainWindow()
     {
         InitializeComponent();
-        TextBlock txtBlock = new TextBlock
+    }
+
+    private void DrawMemoryPage(StackPanel panel, int address)
+    {
+        StringBuilder sb = new StringBuilder();
+        var cpu = _bus!.Cpu;
+
+        for (int row = 0; row < 16; row++)
         {
-            Text = " Hello, NesUI! ",
-            Foreground = Avalonia.Media.Brushes.White,
-            FontSize = 24
-        };
+            sb.Clear();
+            sb.AppendFormat("${0:X4}:", address);
+            for (int col = 0; col < 16; col++)
+            {
+                sb.AppendFormat(" {0:X2}", cpu.ReadMemory(address));
+                address++;
+            }
+            string line = sb.ToString();
+            TextBlock txtBlock = new TextBlock
+            {
+                Text = line,
+                Foreground = Avalonia.Media.Brushes.White,
+                FontFamily = "Courier New",
+                FontSize = 14,
+                Height = 16
+            };
+            panel.Children.Add(txtBlock);
+        }
+    }
+
+    private StackPanel CreateMemoryPage()
+    {
         StackPanel stackPanel = new StackPanel
         {
             Width = 360,
-            Height = 250,
+            Height = 290,
             Orientation = Orientation.Vertical,
             Background = Avalonia.Media.Brushes.Blue,
-            
             Spacing = 2
         };
-        stackPanel.Children.Add(txtBlock);
-        Canvas.SetLeft(stackPanel, 8);
-        Canvas.SetTop(stackPanel, 268);
 
-        MainWindowCanvas.Children.Add(stackPanel);
+        return stackPanel;
     }
+
+    public MainWindow(Bus bus)
+    : this()
+    {
+        InitializeComponent();
+        SetBus(bus);
+
+        StackPanel page0 = CreateMemoryPage();
+        DrawMemoryPage(page0, 0x0000);
+
+        StackPanel page8 = CreateMemoryPage();
+        DrawMemoryPage(page8, 0x8000);
+
+        Canvas.SetLeft(page0, 8);
+        Canvas.SetTop(page0, 8);
+
+        Canvas.SetLeft(page8, 8);
+        Canvas.SetTop(page8, 300);
+
+        MainWindowCanvas.Children.Add(page0);
+        MainWindowCanvas.Children.Add(page8);
+    }
+    /*
+    <StackPanel Width="360" Height="250" Orientation="Vertical" Background="Blue" Canvas.Left="8" Canvas.Top="8" Spacing="2" >
+            <TextBlock Text=" 0000: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00" Foreground="White" FontSize="14" Height="16" FontFamily="Courier" />
+        </StackPanel>
+    */
 }
