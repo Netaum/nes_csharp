@@ -22,6 +22,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CustomTypes\CustomTypes.csproj" />
-    <ProjectReference Include="..\emulator\emulator.csproj" />
+    <ProjectReference Include="..\Emulator\Emulator.csproj" />
   </ItemGroup>
 </Project>

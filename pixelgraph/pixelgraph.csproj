@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\emulator\emulator.csproj" />
+    <ProjectReference Include="..\Emulator\Emulator.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
