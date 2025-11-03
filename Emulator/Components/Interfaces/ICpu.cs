@@ -12,7 +12,6 @@ namespace Emulator.Components.Interfaces
         byte ReadMemory();
         void WriteMemory(int address, byte value);
         void LoadProgram(byte[] program, int startAddress);
-        Dictionary<int, string> Disassemble(int start, int stop);
         bool GetStatusFlag(Flags6502 flag);
         void SetStatusFlag(Flags6502 flag, bool set);
         Instruction[] Instructions { get; }
@@ -33,6 +32,6 @@ namespace Emulator.Components.Interfaces
         int Status { get; set; }
         int OpCode { get; }
         bool Complete { get; }
-
+        Instruction GetInstruction(int address);
     }
 }
