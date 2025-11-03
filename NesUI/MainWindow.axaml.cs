@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 
-namespace NesUI.Views;
+namespace NesUI;
 
 public partial class MainWindow : Window
 {
