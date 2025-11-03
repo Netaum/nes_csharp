@@ -2,8 +2,15 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+        Width="1020" 
+        Height="600"
         x:Class="NesUI.MainWindow"
-        Title="NesUI">
-    Welcome to Avalonia!
+        Title="NesUI"
+        Foreground="{DynamicResource Theme_TextBrush}">
+    <Canvas Name="MainWindowCanvas" Background="#000000" Width="1020">
+        <StackPanel Width="360" Height="250" Orientation="Vertical" Background="Blue" Canvas.Left="8" Canvas.Top="8" Spacing="2" >
+            <TextBlock Text=" 0000: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00" Foreground="White" FontSize="14" Height="16" FontFamily="Courier" />
+        </StackPanel>
+    </Canvas>
 </Window>

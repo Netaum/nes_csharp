@@ -19,4 +19,9 @@
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CustomTypes\CustomTypes.csproj" />
+    <ProjectReference Include="..\emulator\emulator.csproj" />
+  </ItemGroup>
 </Project>

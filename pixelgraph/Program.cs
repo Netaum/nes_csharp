@@ -1,4 +1,4 @@
-using emulator.components;
+using Emulator.components;
 
 namespace pixelgraph;
 
