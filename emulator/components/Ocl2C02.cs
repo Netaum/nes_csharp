@@ -1,10 +1,10 @@
+using CustomTypes;
 using emulator.components.Interfaces;
 using System.Drawing;
 using System.Runtime.Versioning;
 
 namespace emulator.components
 {
-    [SupportedOSPlatform("windows")]
     public class Ocl2C02 : IPpu
     {
         private const int MEMORY_MASK = 0x3FFF;
@@ -14,9 +14,9 @@ namespace emulator.components
         private byte[] paletteTable = new byte[32];
         private int[,] patternTable = new int[2, 4096];
 
-        private Bitmap spriteScreen;
-        private Bitmap[] spriteNameTables;
-        private Bitmap[] spritePatternTables;
+        private BaseBitmap spriteScreen;
+        private BaseBitmap[] spriteNameTables;
+        private BaseBitmap[] spritePatternTables;
         private Color[] screenPalette;
 
         private bool frameComplete;
@@ -27,16 +27,16 @@ namespace emulator.components
         [SupportedOSPlatform("windows")]
         public Ocl2C02()
         {
-            spriteScreen = new Bitmap(256, 240);
+            spriteScreen = BaseBitmap.Create(256, 240);
             spriteNameTables =
             [
-                new Bitmap(256, 240),
-                new Bitmap(256, 240)
+                BaseBitmap.Create(256, 240),
+                BaseBitmap.Create(256, 240)
             ];
             spritePatternTables =
             [
-                new Bitmap(128, 128),
-                new Bitmap(128, 128)
+                BaseBitmap.Create(128, 128),
+                BaseBitmap.Create(128, 128)
             ];
 
             screenPalette = new Color[0x40];
@@ -193,12 +193,12 @@ namespace emulator.components
             throw new NotImplementedException();
         }
 
-        public Bitmap GetScreen()
+        public BaseBitmap GetScreen()
         {
             return spriteScreen;
         }
 
-        public Bitmap GetNameTable(int i)
+        public BaseBitmap GetNameTable(int i)
         {
             return spriteNameTables[i];
         }
@@ -210,7 +210,7 @@ namespace emulator.components
             return screenPalette[value];
         }
 
-        public Bitmap GetPatternTable(int i, int palette)
+        public BaseBitmap GetPatternTable(int i, int palette)
         {
 
             for(int tileX = 0; i < 16; tileX++)

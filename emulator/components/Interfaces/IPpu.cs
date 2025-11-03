@@ -1,4 +1,5 @@
 using System.Drawing;
+using CustomTypes;
 
 namespace emulator.components.Interfaces
 {
@@ -15,9 +16,9 @@ namespace emulator.components.Interfaces
         void Reset();
         void Clock();
 
-        Bitmap GetScreen();
-        Bitmap GetNameTable(int i);
-        Bitmap GetPatternTable(int i, int palette);
+        BaseBitmap GetScreen();
+        BaseBitmap GetNameTable(int i);
+        BaseBitmap GetPatternTable(int i, int palette);
         bool FrameComplete { get; set; }
     }
 }

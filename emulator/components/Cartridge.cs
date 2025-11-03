@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using emulator.components.Interfaces;
 using emulator.components.Mappers;
 
@@ -48,13 +49,14 @@ namespace emulator.components
     }
     public class Cartridge : ICartridge
     {
-        private byte[] programMemory;
-        private byte[] characterMemory;
+        private byte[] programMemory = null!;
+        private byte[] characterMemory = null!;
         private int mapperType = 0x00;
         private int programBank = 0x00;
         private int characterBank = 0x00;
-        private Mapper mapper;
+        private Mapper mapper = null!;
 
+        [MemberNotNull(nameof(programMemory), nameof(characterMemory), nameof(mapper))]
         public void LoadCartridge(byte[] cartridgeData)
         {
             var headerData = cartridgeData.Take(16);
@@ -96,6 +98,8 @@ namespace emulator.components
                 Array.Copy(cartridgeData, startData + programMemory.Length, characterMemory, 0, characterMemory.Length);
 
             }
+
+            throw new NotImplementedException();
 
         }
 
