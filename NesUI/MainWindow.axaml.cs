@@ -2,9 +2,14 @@ using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Documents;
 using Avalonia.Layout;
+using Avalonia.Media;
 using Emulator.Components;
+using Emulator.Components.Enums;
+using Emulator.Components.Interfaces;
 using Emulator.Debug;
 
 namespace NesUI;
@@ -25,11 +30,10 @@ public partial class MainWindow : Window
         InitializeComponent();
     }
 
-    private void DrawMemoryPage(StackPanel panel, int address)
+    private static void DrawMemoryPage(StackPanel panel, ICpu cpu, int address)
     {
         StringBuilder sb = new StringBuilder();
-        var cpu = _bus!.Cpu;
-
+        panel.Children.Clear();
         for (int row = 0; row < 16; row++)
         {
             sb.Clear();
@@ -43,7 +47,7 @@ public partial class MainWindow : Window
             TextBlock txtBlock = new TextBlock
             {
                 Text = line,
-                Foreground = Avalonia.Media.Brushes.White,
+                Foreground = Brushes.White,
                 FontFamily = "Courier New",
                 FontSize = 14,
                 Height = 16
@@ -52,45 +56,67 @@ public partial class MainWindow : Window
         }
     }
 
-    private StackPanel CreateMemoryPage()
+    private static IImmutableBrush GetFlagBrush(ICpu cpu, Flags6502 flag)
     {
-        StackPanel stackPanel = new StackPanel
-        {
-            Width = 360,
-            Height = 290,
-            Orientation = Orientation.Vertical,
-            Background = Avalonia.Media.Brushes.Blue,
-            Spacing = 2
-        };
-
-        return stackPanel;
+        return cpu.GetStatusFlag(flag) ? Brushes.Red : Brushes.Yellow;
     }
 
+    private static void DrawCpuRegisters(TextBlock textBlock, ICpu cpu)
+    {
+        textBlock.Inlines =
+        [
+            new Run("STATUS: "),
+            new Run(" N") { Foreground = GetFlagBrush(cpu, Flags6502.N) },
+            new Run(" V") { Foreground = GetFlagBrush(cpu, Flags6502.V) },
+            new Run(" -"),
+            new Run(" B") { Foreground = GetFlagBrush(cpu, Flags6502.B) },
+            new Run(" D") { Foreground = GetFlagBrush(cpu, Flags6502.D) },
+            new Run(" I") { Foreground = GetFlagBrush(cpu, Flags6502.I) },
+            new Run(" Z") { Foreground = GetFlagBrush(cpu, Flags6502.Z) },
+            new Run(" C") { Foreground = GetFlagBrush(cpu, Flags6502.C) },
+            new LineBreak(),
+            new Run($"PC: ${cpu.ProgramCounter:X4}"),
+            new LineBreak(),
+            new Run($"A:  ${cpu.AccumulatorRegister:X2}  [{cpu.AccumulatorRegister}]"),
+            new LineBreak(),
+            new Run($"X:  ${cpu.XRegister:X2}  [{cpu.XRegister}]"),
+            new LineBreak(),
+            new Run($"Y:  ${cpu.YRegister:X2}  [{cpu.YRegister}]"),
+            new LineBreak(),
+            new Run($"SP: ${cpu.StackPointer:X4}"),
+        ];
+    }
+    private static void DrawCode(TextBlock textblock, ICpu cpu, int memoryMark, int numberOfLines)
+    {
+
+        var code = Disassemble.FromMemory(cpu, 0x0000, 0xFFFF);
+        var currentMemory = memoryMark - (numberOfLines / 2);
+
+        var splice = code.Where(w => w.Key >= currentMemory)
+                         .Take(numberOfLines)
+                         .ToDictionary(k => k.Key, v => v.Value);
+
+        textblock.Inlines = [new LineBreak()];
+        foreach (var line in splice)
+        {
+            var brush = line.Key == memoryMark ? Brushes.Yellow : Brushes.White;
+            textblock.Inlines.Add(new Run(line.Value.ToString()) { Foreground = brush });
+            textblock.Inlines.Add(new LineBreak());
+        }
+    }
+    
     public MainWindow(Bus bus)
     : this()
     {
         InitializeComponent();
         SetBus(bus);
+        RegistersTextBlock.Text = "";
+        CodeTextBlock.Text = "";
 
-        StackPanel page0 = CreateMemoryPage();
-        DrawMemoryPage(page0, 0x0000);
+        DrawMemoryPage(MemoryPage0, bus.Cpu, 0x0000);
+        DrawMemoryPage(MemoryPage1, bus.Cpu, 0x8000);
 
-        StackPanel page8 = CreateMemoryPage();
-        DrawMemoryPage(page8, 0x8000);
-
-        Canvas.SetLeft(page0, 8);
-        Canvas.SetTop(page0, 8);
-
-        Canvas.SetLeft(page8, 8);
-        Canvas.SetTop(page8, 300);
-
-        var code = Disassemble.FromMemory(bus.Cpu, 0x0000, 0xFFFF);
-
-        var splice = code.Where(w => w.Key >= 0x8000)
-                         .Take(20)
-                         .ToDictionary(k => k.Key, v => v.Value);
-        
-        MainWindowCanvas.Children.Add(page0);
-        MainWindowCanvas.Children.Add(page8);
+        DrawCpuRegisters(RegistersTextBlock, bus.Cpu);
+        DrawCode(CodeTextBlock, bus.Cpu, 0x8000, 30);
     }
 }
