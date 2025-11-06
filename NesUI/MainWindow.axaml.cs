@@ -1,12 +1,12 @@
-using System.Collections;
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
-using Avalonia.Layout;
+using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Threading;
 using Emulator.Components;
 using Emulator.Components.Enums;
 using Emulator.Components.Interfaces;
@@ -17,12 +17,59 @@ namespace NesUI;
 public partial class MainWindow : Window
 {
     private Bus? _bus = null!;
+    private DispatcherTimer _timer = new DispatcherTimer();
 
     [MemberNotNull(nameof(_bus))]
     public void SetBus(Bus bus)
     {
         _bus = bus;
         _bus.Reset();
+    }
+
+    public void ClockAction(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button)
+            return;
+
+        var cpu = _bus!.Cpu;
+
+        do
+        {
+            _bus.Clock();
+        } while (!cpu.Complete);
+
+        do
+        {
+            _bus.Clock();
+        } while (cpu.Complete);
+    }
+
+    public void FrameAdvanceAction(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button)
+            return;
+
+        var cpu = _bus!.Cpu;
+
+        do
+        {
+            _bus.Clock();
+        } while (!_bus.Ppu.FrameComplete);
+
+        do
+        {
+            _bus.Clock();
+        } while (!cpu.Complete);
+
+        _bus.Ppu.FrameComplete = false;
+    }
+
+    public void ResetAction(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button)
+            return;
+
+        _bus!.Reset();
     }
 
     public MainWindow()
@@ -104,7 +151,7 @@ public partial class MainWindow : Window
             textblock.Inlines.Add(new LineBreak());
         }
     }
-    
+
     public MainWindow(Bus bus)
     : this()
     {
@@ -113,10 +160,32 @@ public partial class MainWindow : Window
         RegistersTextBlock.Text = "";
         CodeTextBlock.Text = "";
 
-        DrawMemoryPage(MemoryPage0, bus.Cpu, 0x0000);
-        DrawMemoryPage(MemoryPage1, bus.Cpu, 0x8000);
+        _timer.Interval = TimeSpan.FromMilliseconds(33);
 
-        DrawCpuRegisters(RegistersTextBlock, bus.Cpu);
-        DrawCode(CodeTextBlock, bus.Cpu, 0x8000, 30);
+        _timer.Tick += (sender, e) =>
+        {
+            DrawEmulation(
+                _bus,
+                MemoryPage0,
+                MemoryPage1,
+                RegistersTextBlock,
+                CodeTextBlock);
+        };
+
+        _timer.Start();
+    }
+
+    private static void DrawEmulation(
+            Bus bus,
+            StackPanel memoryPage0,
+            StackPanel memoryPage1,
+            TextBlock registersTextBlock,
+            TextBlock codeTextBlock)
+    {
+        DrawMemoryPage(memoryPage0, bus.Cpu, 0x0000);
+        DrawMemoryPage(memoryPage1, bus.Cpu, 0x8000);
+
+        DrawCpuRegisters(registersTextBlock, bus.Cpu);
+        DrawCode(codeTextBlock, bus.Cpu, bus.Cpu.ProgramCounter, 30);
     }
 }
