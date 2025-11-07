@@ -2,10 +2,13 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Avalonia.Threading;
 using Emulator.Components;
 using Emulator.Components.Enums;
@@ -18,6 +21,7 @@ public partial class MainWindow : Window
 {
     private Bus? _bus = null!;
     private DispatcherTimer _timer = new DispatcherTimer();
+    private WriteableBitmap _emulatorBitmap;
 
     [MemberNotNull(nameof(_bus))]
     public void SetBus(Bus bus)
@@ -75,6 +79,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        InitializeEmulatorWindow();
     }
 
     private static void DrawMemoryPage(StackPanel panel, ICpu cpu, int address)
@@ -152,6 +157,13 @@ public partial class MainWindow : Window
         }
     }
 
+    [MemberNotNull(nameof(_emulatorBitmap))]
+    private void InitializeEmulatorWindow()
+    {
+        _emulatorBitmap = new WriteableBitmap(PixelSize.FromSize(new Size(256, 240), 1), new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque);
+        EmulatorWindow.Source = _emulatorBitmap;
+    }
+
     public MainWindow(Bus bus)
     : this()
     {
@@ -169,10 +181,27 @@ public partial class MainWindow : Window
                 MemoryPage0,
                 MemoryPage1,
                 RegistersTextBlock,
-                CodeTextBlock);
+                CodeTextBlock,
+                EmulatorWindow,
+                _emulatorBitmap);
         };
 
         _timer.Start();
+    }
+
+    private unsafe static WriteableBitmap UpdateBitmap(WriteableBitmap bitmap, Bus bus)
+    {
+        using ILockedFramebuffer lockedFramebuffer = bitmap.Lock();
+
+        void* backBuffer = (void*)lockedFramebuffer.Address;
+        Span<byte> buffer = new Span<byte>(backBuffer, 256 * 240 * 4);
+        var img = bus.Ppu.GetScreen().ToBgraFormat();
+
+        for (int i = 0; i < buffer.Length; i++)
+        {
+            buffer[i] = img[i];
+        }
+        return bitmap;
     }
 
     private static void DrawEmulation(
@@ -180,12 +209,15 @@ public partial class MainWindow : Window
             StackPanel memoryPage0,
             StackPanel memoryPage1,
             TextBlock registersTextBlock,
-            TextBlock codeTextBlock)
+            TextBlock codeTextBlock,
+            Image image,
+            WriteableBitmap bitmap)
     {
         DrawMemoryPage(memoryPage0, bus.Cpu, 0x0000);
         DrawMemoryPage(memoryPage1, bus.Cpu, 0x8000);
 
         DrawCpuRegisters(registersTextBlock, bus.Cpu);
         DrawCode(codeTextBlock, bus.Cpu, bus.Cpu.ProgramCounter, 30);
+        image.Source = UpdateBitmap(bitmap, bus);
     }
 }

@@ -19,6 +19,7 @@
             <TextBlock />
             <TextBlock Text="$0000: MOV 1C" Name="CodeTextBlock" Foreground="White" FontFamily="Courier New" FontSize="14" />
         </StackPanel>
+        <Image Margin="360,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="256" Height="240" Name="EmulatorWindow" /> 
         <Button Name="ClockButton" Click="ClockAction" Content="Clock" Margin="32,664,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="88" Height="32" />
         <Button Name="FrameButton" Click="FrameAdvanceAction" Content="Frame" Margin="128,664,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="88" Height="32" />
         <Button Name="ResetButton" Click="ResetAction" Content="Reset" Margin="224,664,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="88" Height="32" /> 

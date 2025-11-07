@@ -6,15 +6,14 @@ public class BaseBitmap
 {
     public int Width { get; private set; }
     public int Height { get; private set; }
-
-    private int[] data;
+    private readonly Color[] data;
 
     private BaseBitmap(int width, int height)
     {
         Width = width;
         Height = height;
 
-        data = new int[width * height * 4];
+        data = new Color[width * height];
     }
 
     public static BaseBitmap Create(int width, int height)
@@ -24,20 +23,25 @@ public class BaseBitmap
 
     public void SetPixel(int x, int y, Color color)
     {
-        SetPixel(x, y, color.R, color.G, color.B, color.A);
+        data[y * Width + x] = color;
     }
 
-    public void SetPixel(int x, int y, int red, int green, int blue)
+    public byte[] ToBgraFormat()
     {
-        SetPixel(x, y, red, green, blue, 255);
-    }
+        byte[] bgraData = new byte[Width * Height * 4];
+        for (int y = 0; y < Height; y++)
+        {
+            for (int x = 0; x < Width; x++)
+            {
+                Color color = data[y * Width + x];
+                int index = (y * Width + x) * 4;
+                bgraData[index] = color.B;
+                bgraData[index + 1] = color.G;
+                bgraData[index + 2] = color.R;
+                bgraData[index + 3] = color.A;
+            }
+        }
 
-    public void SetPixel(int x, int y, int red, int green, int blue, int alpha)
-    {
-        int index = (y * Width + x) * 4;
-        data[index] = blue;
-        data[index + 1] = green;
-        data[index + 2] = red;
-        data[index + 3] = alpha;
+        return bgraData;
     }
 }
