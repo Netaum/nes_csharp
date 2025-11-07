@@ -9,20 +9,23 @@
         Width="1020" 
         Height="800"
         CanResize="False">
-    <Grid Background="#FFE99292" Name="MainGrid">
-        <StackPanel Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="360" Height="580" Orientation="Vertical" Name="MemoryPanel" Background="#000000">
+        <!--
+        <StackPanel IsVisible="False" Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="360" Height="580" Orientation="Vertical" Name="MemoryPanel" Background="#000000">
             <StackPanel Name="MemoryPage0" Height="290" Orientation="Vertical" Background="Blue" Spacing="2" />
             <StackPanel Name="MemoryPage1" Height="290" Orientation="Vertical" Background="Blue" Spacing="2" />
         </StackPanel>
-        <StackPanel Margin="780,0,0,0" VerticalAlignment="Top" Height="700" Background="Blue">
+        <StackPanel  Margin="780,0,0,0" VerticalAlignment="Top" Height="700" Background="Blue">
             <TextBlock Text="STATUS: N V - B D I Z C" Name="RegistersTextBlock" Foreground="White" FontFamily="Courier New" FontSize="14" />
             <TextBlock />
             <TextBlock Text="$0000: MOV 1C" Name="CodeTextBlock" Foreground="White" FontFamily="Courier New" FontSize="14" />
         </StackPanel>
-        <Image Margin="360,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="256" Height="240" Name="EmulatorWindow" /> 
-        <Button Name="ClockButton" Click="ClockAction" Content="Clock" Margin="32,664,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="88" Height="32" />
-        <Button Name="FrameButton" Click="FrameAdvanceAction" Content="Frame" Margin="128,664,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="88" Height="32" />
         <Button Name="ResetButton" Click="ResetAction" Content="Reset" Margin="224,664,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="88" Height="32" /> 
+
+        <Button Name="ClockButton" Click="ClockAction" Content="Clock" Margin="32,664,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="88" Height="32" />
+        -->
+    <Grid Background="#FFE99292" Name="MainGrid">
+        <Image Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="512" Height="480" Name="EmulatorWindow" /> 
+        <Button Name="FrameButton" Click="FrameAdvanceAction" Content="Frame" Margin="128,664,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="88" Height="32" />
     </Grid>
     
 </Window>

@@ -66,6 +66,8 @@ public partial class MainWindow : Window
         } while (!cpu.Complete);
 
         _bus.Ppu.FrameComplete = false;
+        EmulatorWindow.Source = UpdateBitmap(_emulatorBitmap, _bus);
+        EmulatorWindow.InvalidateVisual();
     }
 
     public void ResetAction(object? sender, RoutedEventArgs e)
@@ -161,7 +163,7 @@ public partial class MainWindow : Window
     private void InitializeEmulatorWindow()
     {
         _emulatorBitmap = new WriteableBitmap(PixelSize.FromSize(new Size(256, 240), 1), new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque);
-        EmulatorWindow.Source = _emulatorBitmap;
+        //EmulatorWindow.Source = _emulatorBitmap;
     }
 
     public MainWindow(Bus bus)
@@ -169,13 +171,14 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         SetBus(bus);
-        RegistersTextBlock.Text = "";
-        CodeTextBlock.Text = "";
+        //RegistersTextBlock.Text = "";
+        //CodeTextBlock.Text = "";
 
         _timer.Interval = TimeSpan.FromMilliseconds(33);
 
         _timer.Tick += (sender, e) =>
         {
+            /*
             DrawEmulation(
                 _bus,
                 MemoryPage0,
@@ -184,6 +187,8 @@ public partial class MainWindow : Window
                 CodeTextBlock,
                 EmulatorWindow,
                 _emulatorBitmap);
+                */
+            //EmulatorWindow.Source = UpdateBitmap(_emulatorBitmap, bus);
         };
 
         _timer.Start();
