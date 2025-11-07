@@ -11,7 +11,7 @@ namespace Emulator.Components
 
         private int[,] nameTable = new int[2, 1024];
         private byte[] paletteTable = new byte[32];
-        private int[,] patternTable = new int[2, 4096];
+        private byte[,] patternTable = new byte[2, 4096];
 
         private BaseBitmap spriteScreen;
         private BaseBitmap[] spriteNameTables;
@@ -138,7 +138,7 @@ namespace Emulator.Components
             }
             else if (address >= 0x0000 && address <= 0x1FFF)
             {
-                //data = patternTable[]
+                data = patternTable[(address & 0x1000) >> 12, address & 0x0FFF];
             }
             else if (address >= 0x2000 && address <= 0x3EFF)
             {
@@ -167,7 +167,7 @@ namespace Emulator.Components
             }
             else if (address >= 0x0000 && address <= 0x1FFF)
             {
-
+                patternTable[(address & 0x1000) >> 12, address & 0x0FFF] = value;
             }
             else if (address >= 0x2000 && address <= 0x3EFF)
             {
@@ -209,18 +209,15 @@ namespace Emulator.Components
 
         public BaseBitmap GetPatternTable(int i, int palette)
         {
-
-            for(int tileX = 0; i < 16; tileX++)
+            for(int tileY = 0; tileY < 16; tileY++)
             {
-                for(int tileY = 0; tileY < 16; tileY++)
+                for(int tileX = 0; tileX < 16; tileX++)
                 {
                     int offset = tileY * 256 + tileX * 16;
-
                     for(int row = 0; row < 8; row++)
                     {
-                        int address = i * 0x1000 + offset + row;
-                        byte tileLSB = PpuRead(address);
-                        byte tileMSB = PpuRead(address + 8);
+                        byte tileLSB = PpuRead(i * 0x1000 + offset + row + 0x0000);
+                        byte tileMSB = PpuRead(i * 0x1000 + offset + row + 0x0008);
 
                         for(int col = 0; col < 8; col++)
                         {
@@ -230,7 +227,9 @@ namespace Emulator.Components
 
                             int pixelX = tileX * 8 + (7 - col);
                             int pixelY = tileY * 8 + row;
-                            spritePatternTables[i].SetPixel(pixelX, pixelY, GetColorFromPaletteRam(palette, pixel));
+                            Color color = GetColorFromPaletteRam(palette, pixel);
+
+                            spritePatternTables[i].SetPixel(pixelX, pixelY, color);
                         }
                     }
                 }
