@@ -1,18 +1,35 @@
 using System;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Emulator.Components;
 
 namespace NesUI;
 
 public partial class MainWindow : Window
 {
-    
-    public void ClockAction(object? sender, RoutedEventArgs e)
+    private void UpdatePaletteVisuals()
     {
-        if (sender is not Button)
-            return;
+        foreach (var (_, palette) in _palletes)
+        {
+            palette.Stroke = Brushes.Black;
+            palette.StrokeThickness = 1;
+            palette.InvalidateVisual();
+        }
 
+        _palletes[_selectedPalette].Stroke = Brushes.Red;
+        _palletes[_selectedPalette].StrokeThickness = 2;
+        _palletes[_selectedPalette].InvalidateVisual();
+    }
+    public void ChangePaletteAction()
+    {
+        _selectedPalette = (_selectedPalette + 1) & 0x07;
+        UpdatePaletteVisuals();
+    }
+
+    public void ClockAction()
+    {
         var cpu = _bus!.Cpu;
 
         do
@@ -26,33 +43,51 @@ public partial class MainWindow : Window
         } while (cpu.Complete);
     }
 
-    public void FrameAdvanceAction(object? sender, RoutedEventArgs e)
+    public void FrameAdvanceAction()
     {
-        if (sender is not Button)
-            return;
-
-        var cpu = _bus!.Cpu;
-
-        do
-        {
-            _bus.Clock();
-        } while (!_bus.Ppu.FrameComplete);
-
-        do
-        {
-            _bus.Clock();
-        } while (!cpu.Complete);
-
-        _bus.Ppu.FrameComplete = false;
+        UpdateFrame(_bus!);
     }
 
-    public void ResetAction(object? sender, RoutedEventArgs e)
+    public void ResetAction()
     {
-        if (sender is not Button)
-            return;
-
         _bus!.Reset();
     }
+
+    public void ToggleEmulation()
+    {
+        _runEmulation = !_runEmulation;
+    }
+    
+    public void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.P)
+        {
+            ChangePaletteAction();
+            e.Handled = true;
+        }
+        if (e.Key == Key.C)
+        {
+            ClockAction();
+            e.Handled = true;
+        }
+        if (e.Key == Key.F)
+        {
+            FrameAdvanceAction();
+            e.Handled = true;
+        }
+        if (e.Key == Key.R)
+        {
+            ResetAction();
+            e.Handled = true;
+        }
+        if (e.Key == Key.Space)
+        {
+            ToggleEmulation();
+            e.Handled = true;
+        }
+    }
+
+    
 
     public MainWindow()
     {
@@ -67,7 +102,7 @@ public partial class MainWindow : Window
         _timer.Interval = TimeSpan.FromMilliseconds(33);
         _timer.Tick += (sender, e) =>
         {
-            OnUpdate(_bus!, EmulatorInformation, _emulatorScreenBindings, _showMemory);
+            OnUpdate(_bus!, EmulatorInformation, _emulatorScreenBindings,_runEmulation, _showMemory);
         };
 
         _timer.Start();

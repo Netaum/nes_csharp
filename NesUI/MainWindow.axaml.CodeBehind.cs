@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using Avalonia.Controls;
@@ -20,6 +21,10 @@ namespace NesUI
         private DispatcherTimer _timer = new DispatcherTimer();
         private List<ScreenBinding> _emulatorScreenBindings;
         private bool _showMemory = false;
+        private int _selectedPalette = 0;
+        private bool _runEmulation = false;
+
+        private Dictionary<int, Avalonia.Controls.Shapes.Rectangle> _palletes;
 
         [MemberNotNull(nameof(_emulatorScreenBindings))]
         private void InitializeEmulatorWindow()
@@ -33,6 +38,20 @@ namespace NesUI
                 patternTable0,
                 patternTable1
             };
+
+            _palletes = new Dictionary<int, Avalonia.Controls.Shapes.Rectangle>
+            {
+                {0, Palette0},
+                {1, Palette1},
+                {2, Palette2},
+                {3, Palette3},
+                {4, Palette4},
+                {5, Palette5},
+                {6, Palette6},
+                {7, Palette7},
+            };
+
+            UpdatePaletteVisuals();
         }
 
         [MemberNotNull(nameof(_bus))]
@@ -110,18 +129,31 @@ namespace NesUI
             }
         }
 
+        private static void UpdateFrame(Bus bus)
+        {
+            do
+            {
+                bus.Clock();
+            } while (!bus.Ppu.FrameComplete);
+
+            do
+            {
+                bus.Clock();
+            } while (!bus.Cpu.Complete);
+
+            bus.Ppu.FrameComplete = false;
+        }
+
         private static void OnUpdate(
             Bus bus,
             TextBlock contentBlock,
             List<ScreenBinding> emulatorScreens,
+            bool runEmulation,
             bool drawMemory)
         {
-            do
-            {
-                bus!.Clock();
-            } while (!bus.Ppu.FrameComplete);
-
-            bus.Ppu.FrameComplete = false;
+            
+            if (runEmulation)
+                UpdateFrame(bus);
 
             foreach (var _emulatorScreenBinding in emulatorScreens)
                 _emulatorScreenBinding.OnUpdate(bus.Ppu);
