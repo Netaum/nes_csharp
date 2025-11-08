@@ -210,7 +210,7 @@ namespace Emulator.Components
         public BaseBitmap GetPatternTable(int i, int palette)
         {
 
-            for(int tileX = 0; i < 16; tileX++)
+            for(int tileX = 0; tileX < 16; tileX++)
             {
                 for(int tileY = 0; tileY < 16; tileY++)
                 {

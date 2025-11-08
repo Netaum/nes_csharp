@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
@@ -21,7 +22,7 @@ public partial class MainWindow : Window
 {
     private Bus? _bus = null!;
     private DispatcherTimer _timer = new DispatcherTimer();
-    private ScreenBinding _emulatorScreenBinding;
+    private List<ScreenBinding> _emulatorScreenBindings;
 
     [MemberNotNull(nameof(_bus))]
     public void SetBus(Bus bus)
@@ -157,10 +158,18 @@ public partial class MainWindow : Window
         }
     }
 
-    [MemberNotNull(nameof(_emulatorScreenBinding))]
+    [MemberNotNull(nameof(_emulatorScreenBindings))]
     private void InitializeEmulatorWindow()
     {
-        _emulatorScreenBinding = new ScreenBinding(ScreenSelection.EmulatorScreen, EmulatorWindow, 256, 240);
+        var emulatorScreen = new ScreenBinding(ScreenSelection.EmulatorScreen, EmulatorWindow, 256, 240);
+        var patternTable0 = new ScreenBinding(ScreenSelection.PatternTable1, PatternTable0, 128, 128);
+        var patternTable1 = new ScreenBinding(ScreenSelection.PatternTable2, PatternTable1, 128, 128);
+        _emulatorScreenBindings = new  List<ScreenBinding>
+        {
+            emulatorScreen,
+            patternTable0,
+            patternTable1
+        };
     }
 
     public MainWindow(Bus bus)
@@ -171,7 +180,7 @@ public partial class MainWindow : Window
         //RegistersTextBlock.Text = "";
         //CodeTextBlock.Text = "";
 
-        _timer.Interval = TimeSpan.FromMilliseconds(500);
+        _timer.Interval = TimeSpan.FromMilliseconds(33);
 
         _timer.Tick += (sender, e) =>
         {
@@ -182,7 +191,8 @@ public partial class MainWindow : Window
 
             _bus.Ppu.FrameComplete = false;
             
-            _emulatorScreenBinding.OnUpdate(_bus.Ppu);
+            foreach (var _emulatorScreenBinding in _emulatorScreenBindings)
+                _emulatorScreenBinding.OnUpdate(_bus.Ppu);
         };
 
         _timer.Start();
