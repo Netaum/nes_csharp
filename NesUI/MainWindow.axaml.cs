@@ -21,7 +21,7 @@ public partial class MainWindow : Window
 {
     private Bus? _bus = null!;
     private DispatcherTimer _timer = new DispatcherTimer();
-    private WriteableBitmap _emulatorBitmap;
+    private ScreenBinding _emulatorScreenBinding;
 
     [MemberNotNull(nameof(_bus))]
     public void SetBus(Bus bus)
@@ -66,8 +66,6 @@ public partial class MainWindow : Window
         } while (!cpu.Complete);
 
         _bus.Ppu.FrameComplete = false;
-        EmulatorWindow.Source = UpdateBitmap(_emulatorBitmap, _bus);
-        EmulatorWindow.InvalidateVisual();
     }
 
     public void ResetAction(object? sender, RoutedEventArgs e)
@@ -159,55 +157,38 @@ public partial class MainWindow : Window
         }
     }
 
-    [MemberNotNull(nameof(_emulatorBitmap))]
+    [MemberNotNull(nameof(_emulatorScreenBinding))]
     private void InitializeEmulatorWindow()
     {
-        _emulatorBitmap = new WriteableBitmap(PixelSize.FromSize(new Size(256, 240), 1), new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque);
-        //EmulatorWindow.Source = _emulatorBitmap;
+        _emulatorScreenBinding = new ScreenBinding(ScreenSelection.EmulatorScreen, EmulatorWindow, 256, 240);
     }
 
     public MainWindow(Bus bus)
     : this()
     {
-        InitializeComponent();
+
         SetBus(bus);
         //RegistersTextBlock.Text = "";
         //CodeTextBlock.Text = "";
 
-        _timer.Interval = TimeSpan.FromMilliseconds(33);
+        _timer.Interval = TimeSpan.FromMilliseconds(500);
 
         _timer.Tick += (sender, e) =>
         {
-            /*
-            DrawEmulation(
-                _bus,
-                MemoryPage0,
-                MemoryPage1,
-                RegistersTextBlock,
-                CodeTextBlock,
-                EmulatorWindow,
-                _emulatorBitmap);
-                */
-            //EmulatorWindow.Source = UpdateBitmap(_emulatorBitmap, bus);
+            do
+            {
+                _bus!.Clock();
+            } while (!_bus.Ppu.FrameComplete);
+
+            _bus.Ppu.FrameComplete = false;
+            
+            _emulatorScreenBinding.OnUpdate(_bus.Ppu);
         };
 
         _timer.Start();
     }
 
-    private unsafe static WriteableBitmap UpdateBitmap(WriteableBitmap bitmap, Bus bus)
-    {
-        using ILockedFramebuffer lockedFramebuffer = bitmap.Lock();
 
-        void* backBuffer = (void*)lockedFramebuffer.Address;
-        Span<byte> buffer = new Span<byte>(backBuffer, 256 * 240 * 4);
-        var img = bus.Ppu.GetScreen().ToBgraFormat();
-
-        for (int i = 0; i < buffer.Length; i++)
-        {
-            buffer[i] = img[i];
-        }
-        return bitmap;
-    }
 
     private static void DrawEmulation(
             Bus bus,
@@ -223,6 +204,7 @@ public partial class MainWindow : Window
 
         DrawCpuRegisters(registersTextBlock, bus.Cpu);
         DrawCode(codeTextBlock, bus.Cpu, bus.Cpu.ProgramCounter, 30);
-        image.Source = UpdateBitmap(bitmap, bus);
+        var customBitmap = bus.Ppu.GetScreen();
+        image.Source = UpdateBitmap(bitmap, customBitmap);
     }
 }
