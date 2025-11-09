@@ -65,6 +65,12 @@ namespace Emulator.Components
             Ppu.Clock();
             if (clockCounter % 3 == 0)
                 Cpu.Clock();
+            
+            if(Ppu.NonMaskableInterrupt)
+            {
+                Ppu.NonMaskableInterrupt = false;
+                Cpu.NonMaskableInterrupt();
+            }
             clockCounter++;
         }
 

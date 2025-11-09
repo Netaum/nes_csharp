@@ -15,5 +15,25 @@ namespace Emulator.Components.Mappers
         public abstract (bool, int) CpuWrite(int address);
         public abstract (bool, int) PpuRead(int address);
         public abstract (bool, int) PpuWrite(int address);
+
+        (bool, int) IMapper.CpuRead(int address)
+        {
+            throw new NotImplementedException();
+        }
+
+        (bool, int) IMapper.CpuWrite(int address)
+        {
+            throw new NotImplementedException();
+        }
+
+        (bool, int) IMapper.PpuRead(int address)
+        {
+            throw new NotImplementedException();
+        }
+
+        (bool, int) IMapper.PpuWrite(int address)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

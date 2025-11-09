@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Emulator.Components.Enums;
 
 namespace Emulator.Components.Interfaces
 {
@@ -12,5 +13,7 @@ namespace Emulator.Components.Interfaces
 
         (bool, byte) PpuRead(int address);
         bool PpuWrite(int address, byte value);
+
+        MirrorMode Mirror { get; }
     }
 }

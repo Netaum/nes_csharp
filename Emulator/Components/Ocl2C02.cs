@@ -10,7 +10,7 @@ namespace Emulator.Components
         private const int MEMORY_MASK = 0x3FFF;
         private ICartridge? cartridge;
 
-        private int[,] nameTable = new int[2, 1024];
+        private byte[,] nameTable = new byte[2, 1024];
         private byte[] paletteTable = new byte[32];
         private int[,] patternTable = new int[2, 4096];
 
@@ -19,17 +19,33 @@ namespace Emulator.Components
         private BaseBitmap[] spritePatternTables;
         private Color[] screenPalette;
 
-        private bool frameComplete;
-        private int scanLine;
-        private int cycle;
+        private bool _frameComplete;
+        private int _scanLine;
+        private int _cycle;
 
-        private ControlRegister controlRegister;
-        private MaskRegister maskRegister;
-        private StatusRegister statusRegister;
+        private ControlRegister _controlRegister;
+        private MaskRegister _maskRegister;
+        private StatusRegister _statusRegister;
 
-        private byte addressLatch = 0x00;
-        private byte ppuDataBuffer = 0x00;
-        private int ppuAddress = 0x0000;
+        private byte _addressLatch = 0x00;
+        private byte _ppuDataBuffer = 0x00;
+        private LoopyRegister _vramAddress = new LoopyRegister();
+        private LoopyRegister _tramAddress = new LoopyRegister();
+        private byte _fineXScroll = 0x00;
+
+
+        private byte _bgNextTileId = 0x00;
+        private byte _bgNextTileAttribute = 0x00;
+        private byte _bgNextTileLsb = 0x00;
+        private byte _bgNextTileMsb = 0x00;
+
+
+        private int _bgShifterPatternLo = 0x0000;
+        private int _bgShifterPatternHi = 0x0000;
+        private int _bgShifterAttributeLo = 0x0000;
+        private int _bgShifterAttributeHi = 0x0000;
+
+        public bool NonMaskableInterrupt { get; set; }
 
         public Ocl2C02()
         {
@@ -47,9 +63,9 @@ namespace Emulator.Components
 
             screenPalette = new Color[0x40];
 
-            controlRegister = new ControlRegister();
-            maskRegister = new MaskRegister();
-            statusRegister = new StatusRegister();
+            _controlRegister = new ControlRegister();
+            _maskRegister = new MaskRegister();
+            _statusRegister = new StatusRegister();
             InitPallete();
         }
 
@@ -64,20 +80,210 @@ namespace Emulator.Components
             }
         }
 
+        private void IncrementScrollX()
+        {
+            if (_maskRegister.ShowBackground || _maskRegister.ShowSprites)
+            {
+                if (_vramAddress.CoarseX == 31)
+                {
+                    _vramAddress.CoarseX = 0;
+                    _vramAddress.NameTableX = ~_vramAddress.NameTableX;
+                }
+                else
+                {
+                    _vramAddress.CoarseX++;
+                }
+            }
+        }
+
+        private void IncrementScrollY()
+        {
+            if (_maskRegister.ShowBackground || _maskRegister.ShowSprites)
+            {
+                if (_vramAddress.FineY < 7)
+                {
+                    _vramAddress.FineY++;
+                }
+                else
+                {
+                    _vramAddress.FineY = 0;
+                    if (_vramAddress.CoarseY == 29)
+                    {
+                        _vramAddress.CoarseY = 0;
+                        _vramAddress.NameTableY = ~_vramAddress.NameTableY;
+                    }
+                    else if (_vramAddress.CoarseY == 31)
+                    {
+                        _vramAddress.CoarseY = 0;
+                    }
+                    else
+                    {
+                        _vramAddress.CoarseY++;
+                    }
+                }
+            }
+        }
+
+        private void TransferAddressX()
+        {
+            if (_maskRegister.ShowBackground || _maskRegister.ShowSprites)
+            {
+                _vramAddress.NameTableX = _tramAddress.NameTableX;
+                _vramAddress.CoarseX = _tramAddress.CoarseX;
+            }
+        }
+
+        private void TransferAddressY()
+        {
+            if (_maskRegister.ShowBackground || _maskRegister.ShowSprites)
+            {
+                _vramAddress.FineY = _tramAddress.FineY;
+                _vramAddress.NameTableY = _tramAddress.NameTableY;
+                _vramAddress.CoarseY = _tramAddress.CoarseY;
+            }
+        }
+
+        private void LoadBackgroundShifters()
+        {
+            _bgShifterPatternLo = (_bgShifterAttributeLo & 0xFF00) | _bgNextTileLsb;
+            _bgShifterPatternHi = (_bgShifterAttributeHi & 0xFF00) | _bgNextTileMsb;
+
+            _bgShifterAttributeLo = (_bgShifterAttributeLo & 0xFF00) | ((_bgNextTileAttribute & 0b01) > 0 ? 0xFF : 0x00);
+            _bgShifterAttributeHi = (_bgShifterAttributeHi & 0xFF00) | ((_bgNextTileAttribute & 0b10) > 0 ? 0xFF : 0x00);
+        }
+        
+        private void UpdateShifters()
+        {
+            if (_maskRegister.ShowBackground)
+            {
+                _bgShifterPatternLo <<= 1;
+                _bgShifterPatternHi <<= 1;
+                _bgShifterAttributeLo <<= 1;
+                _bgShifterAttributeHi <<= 1;
+            }
+        }
+
         public void Clock()
         {
-            var i = new Random().Next(0, 2);
-            spriteScreen.SetPixel(int.Clamp(cycle, 0, 255), int.Clamp(scanLine, 0, 239), i == 0 ? screenPalette[0x3F] : screenPalette[0x30]);
-            cycle++;
-            if (cycle >= 341)
+            if (_scanLine >= -1 && _scanLine < 240)
             {
-                cycle = 0;
-                scanLine++;
-
-                if (scanLine >= 261)
+                if (_scanLine == -1 && _cycle == 1)
                 {
-                    scanLine = -1;
-                    frameComplete = true;
+                    _statusRegister.VerticalBlank = false;
+                }
+
+                if ((_cycle >= 2 && _cycle < 258) || (_cycle >= 321 && _cycle < 338))
+                {
+                    UpdateShifters();
+                    int address;
+                    switch ((_cycle - 1) % 8)
+                    {
+                        case 0:
+                            LoadBackgroundShifters();
+                            _bgNextTileId = PpuRead(0x2000 | (_vramAddress.Value & 0x0FFF));
+                            break;
+                        case 2:
+                            address = 0x23C0 |
+                                            (_vramAddress.NameTableY << 11) |
+                                            (_vramAddress.NameTableX << 10) |
+                                            ((_vramAddress.CoarseY >> 2) << 3) |
+                                            (_vramAddress.CoarseX >> 2);
+                            _bgNextTileAttribute = PpuRead(address);
+
+                            if ((_vramAddress.CoarseY & 0x02) > 0)
+                            {
+                                _bgNextTileAttribute >>= 4;
+                            }
+
+                            if ((_vramAddress.CoarseX & 0x02) > 0)
+                            {
+                                _bgNextTileAttribute >>= 2;
+                            }
+
+                            _bgNextTileAttribute &= 0x03;
+
+                            break;
+                        case 4:
+
+                            address = (_controlRegister.BackgroundPatternTableAddress << 12)
+                                      + (_bgNextTileId << 4)
+                                      + _vramAddress.FineY
+                                      + 0;
+                            _bgNextTileLsb = PpuRead(address);
+
+                            break;
+                        case 6:
+                            address = (_controlRegister.BackgroundPatternTableAddress << 12)
+                                      + (_bgNextTileId << 4)
+                                      + _vramAddress.FineY
+                                      + 8;
+                            _bgNextTileLsb = PpuRead(address);
+
+                            break;
+                        case 7:
+
+                            IncrementScrollX();
+
+                            break;
+                    }
+                }
+
+                if (_cycle == 256)
+                {
+                    IncrementScrollY();
+                }
+
+                if (_cycle == 257)
+                {
+                    TransferAddressX();
+                }
+
+                if (_scanLine == -1 && _cycle >= 280 && _cycle < 305)
+                {
+                    TransferAddressY();
+                }
+            }
+            
+            if(_scanLine == 240)
+            {
+                // Post Render Scanline
+            }
+
+            if (_scanLine == 241 && _cycle == 1)
+            {
+                _statusRegister.VerticalBlank = true;
+                if (_controlRegister.EnableNMI)
+                    NonMaskableInterrupt = true;
+            }
+
+            byte bgPixel = 0x00;
+            byte bgPalette = 0x00;
+
+            if(_maskRegister.ShowBackground)
+            {
+                int bitMux = 0x8000 >> _fineXScroll;
+
+                int p0Pixel = (_bgShifterPatternLo & bitMux) > 0 ? 1 : 0;
+                int p1Pixel = (_bgShifterPatternHi & bitMux) > 0 ? 1 : 0;
+                bgPixel = (byte)((p1Pixel << 1) | p0Pixel);
+
+                int bgPal0 = (_bgShifterAttributeLo & bitMux) > 0 ? 1 : 0;
+                int bgPal1 = (_bgShifterAttributeHi & bitMux) > 0 ? 1 : 0;
+                bgPalette = (byte)((bgPal1 << 1) | bgPal0);
+
+                
+            }
+            spriteScreen.SetPixel(_cycle-1, _scanLine, GetColorFromPaletteRam(bgPalette, bgPixel));
+            _cycle++;
+            if (_cycle >= 341)
+            {
+                _cycle = 0;
+                _scanLine++;
+
+                if (_scanLine >= 261)
+                {
+                    _scanLine = -1;
+                    _frameComplete = true;
                 }
             }
         }
@@ -90,16 +296,15 @@ namespace Emulator.Components
             switch (address)
             {
                 case 0x0000: // Control 
-                    data = controlRegister.Value;
+                    data = _controlRegister.Value;
                     break;
                 case 0x0001: // Mask
-                    data = maskRegister.Value;
+                    data = _maskRegister.Value;
                     break;
                 case 0x0002: // Status
-                    statusRegister.VerticalBlank = true;
-                    data = (byte)((statusRegister.Value & 0xE0) | (ppuDataBuffer & 0x1F));
-                    statusRegister.VerticalBlank = false;
-                    addressLatch = 0;
+                    data = (byte)((_statusRegister.Value & 0xE0) | (_ppuDataBuffer & 0x1F));
+                    _statusRegister.VerticalBlank = false;
+                    _addressLatch = 0;
                     break;
                 case 0x0003: // OAM Address
                     break;
@@ -110,11 +315,11 @@ namespace Emulator.Components
                 case 0x0006: // PPU Address
                     break;
                 case 0x0007: // PPU Data
-                    data = ppuDataBuffer;
-                    ppuDataBuffer = PpuRead(ppuAddress);
+                    data = _ppuDataBuffer;
+                    _ppuDataBuffer = PpuRead(_vramAddress.Value);
 
-                    if (ppuAddress > 0x3F00) data = ppuDataBuffer;
-                    ppuAddress++;
+                    if (_vramAddress.Value > 0x3F00) data = _ppuDataBuffer;
+                    _vramAddress.Value += _controlRegister.IncrementMode ? 32 : 1;
 
                     break;
             }
@@ -127,10 +332,12 @@ namespace Emulator.Components
             switch (address)
             {
                 case 0x0000: // Control 
-                    controlRegister.Value = value;
+                    _controlRegister.Value = value;
+                    _tramAddress.NameTableX = _controlRegister.NametableX;
+                    _tramAddress.NameTableY = _controlRegister.NametableY;
                     break;
                 case 0x0001: // Mask
-                    maskRegister.Value = value;
+                    _maskRegister.Value = value;
                     break;
                 case 0x0002: // Status
                     break;
@@ -139,22 +346,35 @@ namespace Emulator.Components
                 case 0x0004: // OAM Data
                     break;
                 case 0x0005: // Scroll
-                    break;
-                case 0x0006: // PPU Address
-                    if (addressLatch == 0)
+                    if (_addressLatch == 0)
                     {
-                        ppuAddress = (ppuAddress & 0x00FF) | (value << 8);
-                        addressLatch = 1;
+                        _fineXScroll = (byte)(value & 0x07);
+                        _tramAddress.CoarseX = value >> 3;
+                        _addressLatch = 1;
                     }
                     else
                     {
-                        ppuAddress = (ppuAddress & 0xFF00) | value;
-                        addressLatch = 0;
+                        _tramAddress.FineY = (byte)(value & 0x07);
+                        _tramAddress.CoarseY = value >> 3;
+                        _addressLatch = 0;
+                    }
+                    break;
+                case 0x0006: // PPU Address
+                    if (_addressLatch == 0)
+                    {
+                        _tramAddress.Value = (_tramAddress.Value & 0x00FF) | (value << 8);
+                        _addressLatch = 1;
+                    }
+                    else
+                    {
+                        _tramAddress.Value = (_tramAddress.Value & 0xFF00) | value;
+                        _vramAddress.Value = _tramAddress.Value;
+                        _addressLatch = 0;
                     }
                     break;
                 case 0x0007: // PPU Data
-                    PpuWrite(ppuAddress, value);
-                    ppuAddress++;
+                    PpuWrite(_vramAddress.Value, value);
+                    _vramAddress.Value += _controlRegister.IncrementMode ? 32 : 1;
                     break;
             }
         }
@@ -181,7 +401,28 @@ namespace Emulator.Components
             }
             else if (address >= 0x2000 && address <= 0x3EFF)
             {
-
+                if (cartridge?.Mirror == Enums.MirrorMode.Vertical)
+                {
+                    if (address >= 0x0000 && address <= 0x03FF)
+                        data = nameTable[0, address & 0x03FF];
+                    if (address >= 0x0400 && address <= 0x07FF)
+                        data = nameTable[1, address & 0x03FF];
+                    if (address >= 0x0800 && address <= 0x0BFF)
+                        data = nameTable[0, address & 0x03FF];
+                    if (address >= 0x0C00 && address <= 0x0FFF)
+                        data = nameTable[1, address & 0x03FF];
+                }
+                else if (cartridge?.Mirror == Enums.MirrorMode.Horizontal)
+                {
+                    if (address >= 0x0000 && address <= 0x03FF)
+                        data = nameTable[0, address & 0x03FF];
+                    if (address >= 0x0400 && address <= 0x07FF)
+                        data = nameTable[0, address & 0x03FF];
+                    if (address >= 0x0800 && address <= 0x0BFF)
+                        data = nameTable[1, address & 0x03FF];
+                    if (address >= 0x0C00 && address <= 0x0FFF)
+                        data = nameTable[1, address & 0x03FF];
+                }
             }
             else if (address >= 0x3F00 && address <= 0x3FFF)
             {
@@ -210,7 +451,28 @@ namespace Emulator.Components
             }
             else if (address >= 0x2000 && address <= 0x3EFF)
             {
-
+                if (cartridge?.Mirror == Enums.MirrorMode.Vertical)
+                {
+                    if (address >= 0x0000 && address <= 0x03FF)
+                        nameTable[0, address & 0x03FF] = value;
+                    if (address >= 0x0400 && address <= 0x07FF)
+                        nameTable[1, address & 0x03FF] = value;
+                    if (address >= 0x0800 && address <= 0x0BFF)
+                        nameTable[0, address & 0x03FF] = value;
+                    if (address >= 0x0C00 && address <= 0x0FFF)
+                        nameTable[1, address & 0x03FF] = value;
+                }
+                else if (cartridge?.Mirror == Enums.MirrorMode.Horizontal)
+                {
+                    if (address >= 0x0000 && address <= 0x03FF)
+                        nameTable[0, address & 0x03FF] = value;
+                    if (address >= 0x0400 && address <= 0x07FF)
+                        nameTable[0, address & 0x03FF] = value;
+                    if (address >= 0x0800 && address <= 0x0BFF)
+                        nameTable[1, address & 0x03FF] = value;
+                    if (address >= 0x0C00 && address <= 0x0FFF)
+                        nameTable[1, address & 0x03FF] = value;
+                }
             }
             else if (address >= 0x3F00 && address <= 0x3FFF)
             {
@@ -250,20 +512,20 @@ namespace Emulator.Components
         public BaseBitmap GetPatternTable(int patternTableIndex, int palette)
         {
 
-            for(int tileX = 0; tileX < 16; tileX++)
+            for (int tileX = 0; tileX < 16; tileX++)
             {
-                for(int tileY = 0; tileY < 16; tileY++)
+                for (int tileY = 0; tileY < 16; tileY++)
                 {
                     int offset = tileY * 256 + tileX * 16;
 
-                    for(int row = 0; row < 8; row++)
+                    for (int row = 0; row < 8; row++)
                     {
                         int address = (patternTableIndex * 0x1000) + offset + row;
 
                         byte tileLSB = PpuRead(address);
                         byte tileMSB = PpuRead(address + 0x0008);
 
-                        for(int col = 0; col < 8; col++)
+                        for (int col = 0; col < 8; col++)
                         {
                             int pixel = (tileLSB & 0x01) + (tileMSB & 0x01);
                             tileLSB >>= 1;
@@ -282,8 +544,8 @@ namespace Emulator.Components
 
         public bool FrameComplete
         {
-            get => frameComplete;
-            set => frameComplete = value;
+            get => _frameComplete;
+            set => _frameComplete = value;
         }
 
 

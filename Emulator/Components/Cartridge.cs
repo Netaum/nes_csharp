@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Emulator.Components.Enums;
 using Emulator.Components.Interfaces;
 using Emulator.Components.Mappers;
 
@@ -54,9 +55,13 @@ namespace Emulator.Components
         private int mapperType = 0x00;
         private int programBank = 0x00;
         private int characterBank = 0x00;
-        private Mapper mapper = null!;
+        private Mapper _mapper = null!;
 
-        [MemberNotNull(nameof(programMemory), nameof(characterMemory), nameof(mapper))]
+        private MirrorMode _mirror = MirrorMode.Horizontal;
+
+        public MirrorMode Mirror { get { return _mirror; } }
+
+        [MemberNotNull(nameof(programMemory), nameof(characterMemory), nameof(_mapper))]
         public void LoadCartridge(byte[] cartridgeData)
         {
             var headerData = cartridgeData.Take(16);
@@ -67,11 +72,13 @@ namespace Emulator.Components
                             16;
 
             mapperType = ((cartridgeHeader.MapperType2 >> 4) << 4) | (cartridgeHeader.MapperType1 >> 4);
-
+            _mirror = (cartridgeHeader.MapperType1 & 0x01) > 0 ?
+                     MirrorMode.Vertical :
+                     MirrorMode.Horizontal;
             switch (mapperType)
             {
                 case 0x00:
-                    mapper = new Mapper000(cartridgeHeader.programRoomChunks, cartridgeHeader.characterRoomChunks);
+                    _mapper = new Mapper000(cartridgeHeader.programRoomChunks, cartridgeHeader.characterRoomChunks);
                     break;
                 default:
                     throw new NotImplementedException($"Mapper type {mapperType} not supported");
@@ -106,7 +113,7 @@ namespace Emulator.Components
 
         public (bool, byte) CpuRead(int address)
         {
-            var (success, mappedAddress) = mapper.CpuRead(address);
+            var (success, mappedAddress) = _mapper.CpuRead(address);
             byte data = 0x00;
             if (success)
             {
@@ -117,7 +124,7 @@ namespace Emulator.Components
 
         public bool CpuWrite(int address, byte value)
         {
-            var (success, mappedAddress) = mapper.CpuWrite(address);
+            var (success, mappedAddress) = _mapper.CpuWrite(address);
             if (success)
                 programMemory[mappedAddress] = value;
 
@@ -126,7 +133,7 @@ namespace Emulator.Components
 
         public (bool, byte) PpuRead(int address)
         {
-            var (success, mappedAddress) = mapper.PpuRead(address);
+            var (success, mappedAddress) = _mapper.PpuRead(address);
             byte data = 0x00;
             if (success)
             {
@@ -137,7 +144,7 @@ namespace Emulator.Components
 
         public bool PpuWrite(int address, byte value)
         {
-            var (success, mappedAddress) = mapper.PpuWrite(address);
+            var (success, mappedAddress) = _mapper.PpuWrite(address);
             if (success)
                 characterMemory[mappedAddress] = value;
 

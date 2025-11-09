@@ -18,28 +18,22 @@ namespace Emulator.Primitives
 
         private int internalValue = 0;
 
-        public bool NametableX
+        public int NametableX
         {
-            get { return (internalValue & NAMETABLE_X_MASK) != 0; }
+            get { return internalValue & NAMETABLE_X_MASK; }
             set
             {
-                if (value)
-                    internalValue |= NAMETABLE_X_MASK;
-                else
-                    internalValue &= ~NAMETABLE_X_MASK;
+                internalValue = (internalValue & ~NAMETABLE_X_MASK) | (value & NAMETABLE_X_MASK);
             }
         }
 
-        public bool NametableY
+        public int NametableY
         {
-            get { return (internalValue & NAMETABLE_Y_MASK) != 0; }
+            get { return internalValue & NAMETABLE_Y_MASK; }
             set
             {
-                if (value)
-                    internalValue |= NAMETABLE_Y_MASK;
-                else
-                    internalValue &= ~NAMETABLE_Y_MASK;
-            }
+                internalValue = (internalValue & ~NAMETABLE_Y_MASK) | (value & NAMETABLE_Y_MASK);
+            }   
         }
 
         public bool IncrementMode
@@ -66,15 +60,12 @@ namespace Emulator.Primitives
             }
         }
 
-        public bool BackgroundPatternTableAddress
+        public int BackgroundPatternTableAddress
         {
-            get { return (internalValue & BACKGROUND_PATTERN_TABLE_ADDRESS_MASK) != 0; }
+            get { return internalValue & BACKGROUND_PATTERN_TABLE_ADDRESS_MASK; }
             set
             {
-                if (value)
-                    internalValue |= BACKGROUND_PATTERN_TABLE_ADDRESS_MASK;
-                else
-                    internalValue &= ~BACKGROUND_PATTERN_TABLE_ADDRESS_MASK;
+                internalValue = (internalValue & ~BACKGROUND_PATTERN_TABLE_ADDRESS_MASK) | (value & BACKGROUND_PATTERN_TABLE_ADDRESS_MASK);
             }
         }
 

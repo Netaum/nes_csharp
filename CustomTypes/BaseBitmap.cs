@@ -23,6 +23,8 @@ public class BaseBitmap
 
     public void SetPixel(int x, int y, Color color)
     {
+        if (x < 0 || x >= Width || y < 0 || y >= Height)
+            return;
         data[y * Width + x] = color;
     }
 
