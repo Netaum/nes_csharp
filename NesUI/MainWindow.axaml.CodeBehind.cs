@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Media;
@@ -10,7 +11,7 @@ using Avalonia.Threading;
 using Emulator.Components;
 using Emulator.Components.Enums;
 using Emulator.Components.Interfaces;
-using Emulator.Debug;
+using Emulator.DebugTools;
 using NesUI.Helpers;
 
 namespace NesUI
@@ -23,10 +24,11 @@ namespace NesUI
         private bool _showMemory = false;
         private int _selectedPalette = 0;
         private bool _runEmulation = false;
+        private List<PaletteViewer> _paletteViewers;
 
-        private Dictionary<int, Avalonia.Controls.Shapes.Rectangle> _palletes;
 
         [MemberNotNull(nameof(_emulatorScreenBindings))]
+        [MemberNotNull(nameof(_paletteViewers))]
         private void InitializeEmulatorWindow()
         {
             var emulatorScreen = new ScreenBinding(ScreenSelection.EmulatorScreen, EmulatorWindow, 256, 240);
@@ -39,19 +41,45 @@ namespace NesUI
                 patternTable1
             };
 
-            _palletes = new Dictionary<int, Avalonia.Controls.Shapes.Rectangle>
+            DebugGrid.ColumnDefinitions = new ColumnDefinitions();
+            for (int i = 0; i < 32; i++)
             {
-                {0, Palette0},
-                {1, Palette1},
-                {2, Palette2},
-                {3, Palette3},
-                {4, Palette4},
-                {5, Palette5},
-                {6, Palette6},
-                {7, Palette7},
-            };
+                DebugGrid.ColumnDefinitions.Add(new ColumnDefinition(1, GridUnitType.Star));
+            }
 
-            UpdatePaletteVisuals();
+            var squares = new List<Avalonia.Controls.Shapes.Rectangle>();
+            _paletteViewers = new List<PaletteViewer>();
+
+            for (int i = 0; i < 32; i++)
+            {
+                if (i % 4 == 0)
+                {
+                    if (squares.Count > 0)
+                    {
+                        _paletteViewers.Add(new PaletteViewer(squares));
+                    }
+                    squares = new List<Avalonia.Controls.Shapes.Rectangle>();
+                }
+                var rect = new Avalonia.Controls.Shapes.Rectangle { Fill = Brushes.Yellow, StrokeThickness = 0 };
+                Grid.SetColumn(rect, i);
+                DebugGrid.Children.Add(rect);
+                squares.Add(rect);
+            }
+
+            _paletteViewers.Add(new PaletteViewer(squares));
+
+            for (int i = 0; i < 32; i++)
+            {
+                if (i % 4 == 0)
+                {
+                    var border = new Avalonia.Controls.Shapes.Rectangle { Fill = Brushes.Transparent, StrokeThickness = 1, Stroke = Brushes.Black };
+                    Grid.SetColumnSpan(border, 4);
+                    Grid.SetColumn(border, i);
+                    DebugGrid.Children.Add(border);
+                    int viewIndex = i / 4;
+                    _paletteViewers[viewIndex].SetBorderRectangle(border);
+                }
+            }
         }
 
         [MemberNotNull(nameof(_bus))]
@@ -144,34 +172,76 @@ namespace NesUI
             bus.Ppu.FrameComplete = false;
         }
 
-        private static void OnUpdate(
+        private static void UpdateScreens(Bus bus, List<ScreenBinding> emulatorScreens, int palette)
+        {
+            foreach (var _emulatorScreenBinding in emulatorScreens)
+                _emulatorScreenBinding.OnUpdate(bus.Ppu, palette);
+        }
+
+        private static void UpdateCode(Bus bus, TextBlock contentBlock)
+        {
+            contentBlock.Inlines = new InlineCollection();
+            DrawCpuRegisters(contentBlock, bus.Cpu);
+            contentBlock.Inlines!.Add(new LineBreak());
+            DrawCode(contentBlock, bus.Cpu, bus.Cpu.ProgramCounter, 30);
+        }
+
+        private static void UpdateMemory(Bus bus, TextBlock contentBlock)
+        {
+            contentBlock.Inlines = new InlineCollection();
+            DrawMemoryPage(contentBlock, bus.Cpu, 0x0000);
+            contentBlock.Inlines!.Add(new LineBreak());
+            DrawMemoryPage(contentBlock, bus.Cpu, 0x8000);
+        }
+
+
+        private static void UpdateContent(Bus bus, TextBlock contentBlock, bool drawMemory)
+        {
+            if (drawMemory)
+            {
+                UpdateMemory(bus, contentBlock);
+            }
+            else
+            {
+                UpdateCode(bus, contentBlock);
+            }
+        }
+
+        private static void UpdatePaletteVisuals(Bus bus, List<PaletteViewer> paletteViewers, int selectedPalette)
+        {
+            for (int i = 0; i < paletteViewers.Count; i++)
+            {
+                paletteViewers[i].SetActive(i == selectedPalette);
+                paletteViewers[i].OnUpdate(bus.Ppu, i);
+            }
+        }
+
+        private static void UpdateView(
+                    Bus bus,
+                    TextBlock contentBlock,
+                    List<ScreenBinding> emulatorScreens,
+                    bool drawMemory,
+                    int selectedPalette,
+                    List<PaletteViewer> paletteViewers)
+        {
+            UpdateFrame(bus);
+            UpdateScreens(bus, emulatorScreens, selectedPalette);
+            UpdateContent(bus, contentBlock, drawMemory);
+            UpdatePaletteVisuals(bus, paletteViewers, selectedPalette);
+        }
+
+        private static void OnTick(
             Bus bus,
             TextBlock contentBlock,
             List<ScreenBinding> emulatorScreens,
             bool runEmulation,
-            bool drawMemory)
+            bool drawMemory,
+            int selectedPalette,
+            List<PaletteViewer> paletteViewers)
         {
-            
-            if (runEmulation)
-                UpdateFrame(bus);
-
-            foreach (var _emulatorScreenBinding in emulatorScreens)
-                _emulatorScreenBinding.OnUpdate(bus.Ppu);
-
-            contentBlock.Inlines = new InlineCollection();
-
-            if (drawMemory)
-            {
-                DrawMemoryPage(contentBlock, bus.Cpu, 0x0000);
-                contentBlock.Inlines!.Add(new LineBreak());
-                DrawMemoryPage(contentBlock, bus.Cpu, 0x8000);
-            }
-            else
-            {
-                DrawCpuRegisters(contentBlock, bus.Cpu);
-                contentBlock.Inlines!.Add(new LineBreak());
-                DrawCode(contentBlock, bus.Cpu, bus.Cpu.ProgramCounter, 30);
-            }
+            if (!runEmulation)
+                return;
+            UpdateView(bus, contentBlock, emulatorScreens, drawMemory, selectedPalette, paletteViewers);
         }
     }
 }

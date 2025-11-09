@@ -1,5 +1,6 @@
 using CustomTypes;
 using Emulator.Components.Interfaces;
+using Emulator.Primitives;
 using System.Drawing;
 
 namespace Emulator.Components
@@ -22,6 +23,14 @@ namespace Emulator.Components
         private int scanLine;
         private int cycle;
 
+        private ControlRegister controlRegister;
+        private MaskRegister maskRegister;
+        private StatusRegister statusRegister;
+
+        private byte addressLatch = 0x00;
+        private byte ppuDataBuffer = 0x00;
+        private int ppuAddress = 0x0000;
+
         public Ocl2C02()
         {
             spriteScreen = BaseBitmap.Create(256, 240);
@@ -37,6 +46,10 @@ namespace Emulator.Components
             ];
 
             screenPalette = new Color[0x40];
+
+            controlRegister = new ControlRegister();
+            maskRegister = new MaskRegister();
+            statusRegister = new StatusRegister();
             InitPallete();
         }
 
@@ -77,10 +90,16 @@ namespace Emulator.Components
             switch (address)
             {
                 case 0x0000: // Control 
+                    data = controlRegister.Value;
                     break;
                 case 0x0001: // Mask
+                    data = maskRegister.Value;
                     break;
                 case 0x0002: // Status
+                    statusRegister.VerticalBlank = true;
+                    data = (byte)((statusRegister.Value & 0xE0) | (ppuDataBuffer & 0x1F));
+                    statusRegister.VerticalBlank = false;
+                    addressLatch = 0;
                     break;
                 case 0x0003: // OAM Address
                     break;
@@ -91,6 +110,12 @@ namespace Emulator.Components
                 case 0x0006: // PPU Address
                     break;
                 case 0x0007: // PPU Data
+                    data = ppuDataBuffer;
+                    ppuDataBuffer = PpuRead(ppuAddress);
+
+                    if (ppuAddress > 0x3F00) data = ppuDataBuffer;
+                    ppuAddress++;
+
                     break;
             }
 
@@ -102,8 +127,10 @@ namespace Emulator.Components
             switch (address)
             {
                 case 0x0000: // Control 
+                    controlRegister.Value = value;
                     break;
                 case 0x0001: // Mask
+                    maskRegister.Value = value;
                     break;
                 case 0x0002: // Status
                     break;
@@ -114,8 +141,20 @@ namespace Emulator.Components
                 case 0x0005: // Scroll
                     break;
                 case 0x0006: // PPU Address
+                    if (addressLatch == 0)
+                    {
+                        ppuAddress = (ppuAddress & 0x00FF) | (value << 8);
+                        addressLatch = 1;
+                    }
+                    else
+                    {
+                        ppuAddress = (ppuAddress & 0xFF00) | value;
+                        addressLatch = 0;
+                    }
                     break;
                 case 0x0007: // PPU Data
+                    PpuWrite(ppuAddress, value);
+                    ppuAddress++;
                     break;
             }
         }
@@ -130,11 +169,11 @@ namespace Emulator.Components
             byte data = 0x00;
             address &= MEMORY_MASK;
 
-            var (success, mappedAddress) = Cartridge.PpuRead(address);
+            var (success, mappedData) = Cartridge.PpuRead(address);
 
             if (success)
             {
-                return data;
+                return mappedData;
             }
             else if (address >= 0x0000 && address <= 0x1FFF)
             {
@@ -200,14 +239,15 @@ namespace Emulator.Components
             return spriteNameTables[i];
         }
 
-        private Color GetColorFromPaletteRam(int palette, int pixel)
+        public Color GetColorFromPaletteRam(int palette, int pixel)
         {
             var colorAddress = 0x3F00 + (palette << 2) + pixel;
-            byte value = PpuRead(colorAddress);
+            var ppuValue = PpuRead(colorAddress);
+            int value = ppuValue & 0x3F;
             return screenPalette[value];
         }
 
-        public BaseBitmap GetPatternTable(int i, int palette)
+        public BaseBitmap GetPatternTable(int patternTableIndex, int palette)
         {
 
             for(int tileX = 0; tileX < 16; tileX++)
@@ -218,9 +258,10 @@ namespace Emulator.Components
 
                     for(int row = 0; row < 8; row++)
                     {
-                        int address = i * 0x1000 + offset + row;
+                        int address = (patternTableIndex * 0x1000) + offset + row;
+
                         byte tileLSB = PpuRead(address);
-                        byte tileMSB = PpuRead(address + 8);
+                        byte tileMSB = PpuRead(address + 0x0008);
 
                         for(int col = 0; col < 8; col++)
                         {
@@ -230,13 +271,13 @@ namespace Emulator.Components
 
                             int pixelX = tileX * 8 + (7 - col);
                             int pixelY = tileY * 8 + row;
-                            spritePatternTables[i].SetPixel(pixelX, pixelY, GetColorFromPaletteRam(palette, pixel));
+                            spritePatternTables[patternTableIndex].SetPixel(pixelX, pixelY, GetColorFromPaletteRam(palette, pixel));
                         }
                     }
                 }
             }
 
-            return spritePatternTables[i];
+            return spritePatternTables[patternTableIndex];
         }
 
         public bool FrameComplete

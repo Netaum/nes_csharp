@@ -20,5 +20,6 @@ namespace Emulator.Components.Interfaces
         BaseBitmap GetNameTable(int i);
         BaseBitmap GetPatternTable(int i, int palette);
         bool FrameComplete { get; set; }
+        Color GetColorFromPaletteRam(int palette, int pixel);
     }
 }

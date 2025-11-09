@@ -4,28 +4,16 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Emulator.Components;
+using Emulator.Primitives;
 
 namespace NesUI;
 
 public partial class MainWindow : Window
 {
-    private void UpdatePaletteVisuals()
-    {
-        foreach (var (_, palette) in _palletes)
-        {
-            palette.Stroke = Brushes.Black;
-            palette.StrokeThickness = 1;
-            palette.InvalidateVisual();
-        }
-
-        _palletes[_selectedPalette].Stroke = Brushes.Red;
-        _palletes[_selectedPalette].StrokeThickness = 2;
-        _palletes[_selectedPalette].InvalidateVisual();
-    }
     public void ChangePaletteAction()
     {
         _selectedPalette = (_selectedPalette + 1) & 0x07;
-        UpdatePaletteVisuals();
+        UpdateView(_bus!, EmulatorInformation, _emulatorScreenBindings, _showMemory, _selectedPalette, _paletteViewers);
     }
 
     public void ClockAction()
@@ -41,11 +29,13 @@ public partial class MainWindow : Window
         {
             _bus.Clock();
         } while (cpu.Complete);
+        UpdateView(_bus!, EmulatorInformation, _emulatorScreenBindings, _showMemory, _selectedPalette, _paletteViewers);
     }
 
     public void FrameAdvanceAction()
     {
         UpdateFrame(_bus!);
+        UpdateView(_bus!, EmulatorInformation, _emulatorScreenBindings, _showMemory, _selectedPalette, _paletteViewers);
     }
 
     public void ResetAction()
@@ -87,8 +77,6 @@ public partial class MainWindow : Window
         }
     }
 
-    
-
     public MainWindow()
     {
         InitializeComponent();
@@ -99,11 +87,14 @@ public partial class MainWindow : Window
     : this()
     {
         SetBus(bus);
+
         _timer.Interval = TimeSpan.FromMilliseconds(33);
         _timer.Tick += (sender, e) =>
         {
-            OnUpdate(_bus!, EmulatorInformation, _emulatorScreenBindings,_runEmulation, _showMemory);
+            OnTick(_bus!, EmulatorInformation, _emulatorScreenBindings, _runEmulation, _showMemory, _selectedPalette, _paletteViewers);
         };
+        
+        UpdateView(_bus!, EmulatorInformation, _emulatorScreenBindings, _showMemory, _selectedPalette, _paletteViewers);
 
         _timer.Start();
     }

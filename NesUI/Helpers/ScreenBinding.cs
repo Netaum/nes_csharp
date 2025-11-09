@@ -25,13 +25,13 @@ namespace NesUI.Helpers
         public Image ImageControl => _imageControl;
         public ScreenSelection ScreenSelection => _screenSelection;
 
-        public void OnUpdate(IPpu ppu)
+        public void OnUpdate(IPpu ppu, int palette)
         {
             var baseBitmap = _screenSelection switch
             {
                 ScreenSelection.EmulatorScreen => ppu.GetScreen(),
-                ScreenSelection.PatternTable1 => ppu.GetPatternTable(0, 1),
-                ScreenSelection.PatternTable2 => ppu.GetPatternTable(1, 1),
+                ScreenSelection.PatternTable1 => ppu.GetPatternTable(0, palette),
+                ScreenSelection.PatternTable2 => ppu.GetPatternTable(1, palette),
                 _ => throw new ArgumentOutOfRangeException()
             };
             var writeableBitmap = UpdateBitmap(_writeableBitmap, baseBitmap);

@@ -84,7 +84,7 @@ namespace Emulator.Components
             }
             else if(address >= 0x2000 && address <= 0x3FFF)
             {
-                Ppu.CpuRead(address & PPU_MASK);
+                return Ppu.CpuRead(address & PPU_MASK);
             }
             
             return 0x00;
