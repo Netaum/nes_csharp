@@ -141,7 +141,7 @@ namespace emulator.components
             }
             else if (address >= 0x0000 && address <= 0x1FFF)
             {
-                data = patternTable[]
+                //data = patternTable[1, address];
             }
             else if (address >= 0x2000 && address <= 0x3EFF)
             {
