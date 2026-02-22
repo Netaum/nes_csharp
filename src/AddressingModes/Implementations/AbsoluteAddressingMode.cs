@@ -1,0 +1,22 @@
+using Interfaces;
+
+namespace AddressingModes.Implementations
+{
+    public class AbsoluteAddressingMode : AddressingModeBase
+    {
+        public override string Name => "ABS";
+
+        public override int Execute(ICpu cpu)
+        {
+            int lowByte = cpu.ReadMemory();
+            cpu.StepProgramCounter();
+            int highByte = cpu.ReadMemory();
+            cpu.StepProgramCounter();
+
+            int address = (highByte << 8) | lowByte;
+
+            cpu.SetAbsoluteAddress(address);
+            return 0;
+        }
+    }
+}

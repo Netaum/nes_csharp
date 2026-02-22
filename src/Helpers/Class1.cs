@@ -1,6 +1,9 @@
 ﻿namespace Helpers;
 
-public class Class1
+public static class Helper
 {
-
+    public static byte ToByte(this int value)
+    {
+        return (byte)(value & 0x00FF);
+    }
 }

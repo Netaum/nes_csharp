@@ -20,6 +20,9 @@ namespace Interfaces
         byte ReadMemory();
         void WriteMemory(int address, byte value);
         void LoadProgram(byte[] program, int startAddress);
+        int Fetch();
+        void IncreaseCycles();
+        void IncreaseCycles(int cycles);
 
         //REGISTERS
         int XRegister { get; }
@@ -39,10 +42,14 @@ namespace Interfaces
 
         void StepProgramCounter(int offset);
         void StepProgramCounter();
-        void PushStack(byte value);
-        byte PopStack();
+        void SetProgramCounter(int address);
         void SetAbsoluteAddress(int address);
         void SetRelativeAddress(int offset);
+        void IncreaseStackPointer();
+        void DecreaseStackPointer();
+        void SetStackPointer(int value);
+        void SetStatus(int value);
+        void SetFetchedValue(int value);
 
         //INSTRUCTION
         int Cycles { get; }        
