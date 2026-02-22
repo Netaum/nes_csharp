@@ -1,7 +1,7 @@
 using System.Data.Common;
 using System.Text;
-using emulator.components.Enums;
-using emulator.components.Interfaces;
+using Emulator.Components.Enums;
+using Emulator.Components.Interfaces;
 
 
 namespace pixelgraph;
