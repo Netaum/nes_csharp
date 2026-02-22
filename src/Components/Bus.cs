@@ -26,6 +26,8 @@ namespace Components
             {
                 cpuMemory[i] = 0x00;
             }
+
+            _cpu.ConnectBus(this);
         }
 
         public ICpu Cpu => _cpu;

@@ -21,7 +21,7 @@ namespace Components
             this.characterMemory = characterMemory;
         }
 
-        public ICartridge LoadCartridge(byte[] cartridgeData)
+        public static ICartridge CreateCartridge(byte[] cartridgeData)
         {
             var headerData = cartridgeData.Take(16);
             var cartridgeHeader = CartridgeHeader.FromBytes(headerData.ToArray());

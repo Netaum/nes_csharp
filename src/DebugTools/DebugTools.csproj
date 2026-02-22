@@ -6,8 +6,12 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-    <ItemGroup>
+
+      <ItemGroup>
     <ProjectReference Include="..\Interfaces\Interfaces.csproj" />
+        <ProjectReference Include="..\OpCodes\OpCodes.csproj" />
+    <ProjectReference Include="..\AddressingModes\AddressingModes.csproj" />
+    <ProjectReference Include="..\Chips\Chips.csproj" />
   </ItemGroup>
 
 </Project>

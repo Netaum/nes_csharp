@@ -128,33 +128,33 @@ public class Ocl6502 : ICpu
 
     public void Clock()
     {
-       if (_cycles == 0)
-            {
-                _opCode = ReadMemory(_programCounter);
-                _programCounter++;
-                IInstruction instruction = Instruction.GetInstruction(_opCode);
-                _currentInstruction = instruction;
+        if (_cycles == 0)
+        {
+            _opCode = ReadMemory(_programCounter);
+            _programCounter++;
+            IInstruction instruction = Instruction.GetInstruction(_opCode);
+            _currentInstruction = instruction;
 
-                _cycles = instruction.Cycles;
-                int additionalCycle1 = instruction.AddressingMode.Execute(this);
-                int additionalCycle2 = instruction.Operation.Execute(this);
+            _cycles = instruction.Cycles;
+            int additionalCycle1 = instruction.AddressingMode.Execute(this);
+            int additionalCycle2 = instruction.Operation.Execute(this);
 
-                _cycles += additionalCycle1 & additionalCycle2;
-            }
+            _cycles += additionalCycle1 & additionalCycle2;
+        }
 
-            _cycles--;
+        _cycles--;
     }
 
     public int Fetch()
     {
         var instruction = Instruction.GetInstruction(_opCode);
 
-            if (instruction.AddressingMode != InstructionAddressingModes.Implied)
-            {
-                _fetchedData = ReadMemory(_absoluteAddress);
-            }
+        if (instruction.AddressingMode != InstructionAddressingModes.Implied)
+        {
+            _fetchedData = ReadMemory(_absoluteAddress);
+        }
 
-            return _fetchedData;
+        return _fetchedData;
     }
 
     public void Interrupt()
@@ -260,6 +260,6 @@ public class Ocl6502 : ICpu
 
     public void SetFetchedValue(int value)
     {
-       _fetchedData = value;
+        _fetchedData = value;
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace Helpers;
+﻿using Interfaces;
+
+namespace Helpers;
 
 public static class Helper
 {

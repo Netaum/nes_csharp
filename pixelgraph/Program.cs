@@ -18,7 +18,7 @@ static class Program
         var ppu = new Ocl2C02();
         var cardridge = new Cartridge();
 
-        var nestest = File.ReadAllBytes("h:\\dev\\nes_csharp\\roms\\nestest.nes");
+        var nestest = File.ReadAllBytes("d:\\Backup Win11\\dev\\nes_csharp\\roms\\nestest.nes");
         cardridge.LoadCartridge(nestest);
 
         bus.ConnectCpu(cpu);
