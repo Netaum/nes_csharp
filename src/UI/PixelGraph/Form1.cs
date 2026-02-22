@@ -1,9 +1,15 @@
+using Interfaces;
+
 namespace PixelGraph;
 
 public partial class Form1 : Form
 {
-    public Form1()
+    private IBus _bus;
+    public Form1(IBus bus)
     {
+        _bus = bus;
         InitializeComponent();
     }
+
+    
 }

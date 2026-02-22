@@ -23,6 +23,6 @@ static class Program
         var cardridge = Cartridge.CreateCartridge(nestest);
         bus.InsertCartridge(cardridge);
 
-        Application.Run(new Form1());
+        Application.Run(new Form1(bus));
     }    
 }
