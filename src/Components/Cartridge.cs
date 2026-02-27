@@ -14,11 +14,14 @@ namespace Components
         private byte[] characterMemory;
         private IMapper mapper;
 
+        public Interfaces.Enums.MirrorMode Mirror { get; private set; }
+
         private Cartridge(IMapper mapper, byte[] programMemory, byte[] characterMemory)
         {
             this.mapper = mapper;
             this.programMemory = programMemory;
             this.characterMemory = characterMemory;
+            Mirror = Interfaces.Enums.MirrorMode.Horizontal;
         }
 
         public static ICartridge CreateCartridge(byte[] cartridgeData)

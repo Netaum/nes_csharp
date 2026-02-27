@@ -6,5 +6,7 @@ namespace Interfaces
         bool CpuWrite(int address, byte value);
         (bool, byte) PpuRead(int address);
         bool PpuWrite(int address, byte value);
+
+        Enums.MirrorMode Mirror { get; }
     }
 }

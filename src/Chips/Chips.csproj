@@ -11,6 +11,7 @@
     <ProjectReference Include="..\Mappers\Mappers.csproj" />
     <ProjectReference Include="..\Helpers\Helpers.csproj" />
     <ProjectReference Include="..\OpCodes\OpCodes.csproj" />
+    <ProjectReference Include="..\Components\Components.csproj" />
     <ProjectReference Include="..\AddressingModes\AddressingModes.csproj" />
   </ItemGroup>
 

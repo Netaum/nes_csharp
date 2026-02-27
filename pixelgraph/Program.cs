@@ -1,4 +1,4 @@
-using Emulator.components;
+
 
 namespace pixelgraph;
 
@@ -13,18 +13,18 @@ static class Program
         // To customize application configuration such as set high DPI settings or default font,
         // see https://aka.ms/applicationconfiguration.
         ApplicationConfiguration.Initialize();
-        var cpu = new Ocl6502();
-        var bus = new Bus();
-        var ppu = new Ocl2C02();
-        var cardridge = new Cartridge();
+        //var cpu = new Ocl6502();
+        //var bus = new Bus();
+        //var ppu = new Ocl2C02();
+        //var cardridge = new Cartridge();
 
         var nestest = File.ReadAllBytes("d:\\Backup Win11\\dev\\nes_csharp\\roms\\nestest.nes");
-        cardridge.LoadCartridge(nestest);
+        //cardridge.LoadCartridge(nestest);
 
-        bus.ConnectCpu(cpu);
-        bus.ConnectPpu(ppu);
-        bus.InsertCartridge(cardridge);
+        //bus.ConnectCpu(cpu);
+        //bus.ConnectPpu(ppu);
+        //bus.InsertCartridge(cardridge);
 
-        Application.Run(new FrMain(bus));
+        Application.Run(new FrMain(null));
     }
 }

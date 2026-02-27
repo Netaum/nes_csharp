@@ -1,5 +1,4 @@
 using Interfaces;
-
 namespace Components
 {
     public class Bus : IBus
@@ -7,7 +6,7 @@ namespace Components
         private readonly ICpu _cpu;
         private readonly IPpu _ppu;
         private ICartridge? _cartridge;
-
+        
         private const int MAX_ADDRESS = 0x1FFF; // Maximum address for the bus
         private const int MIN_ADDRESS = 0x0000; // Minimum address for the bus
         private const int BUS_SIZE = 2048; // Size of the CPU memory

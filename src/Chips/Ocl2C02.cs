@@ -1,15 +1,15 @@
 using System.Drawing;
 using Interfaces;
 using System.Runtime.Versioning;
+using Components.Primitives;
 
 namespace Chips
 {
     public class Ocl2C02 : IPpu
     {
         private const int MEMORY_MASK = 0x3FFF;
-
         private ICartridge? _cartridge;
-        private int[,] _nameTable = new int[2, 1024];
+        private byte[,] _nameTable = new byte[2, 1024];
         private byte[] _paletteTable = new byte[32];
         private int[,] _patternTable = new int[2, 4096];
 
@@ -22,6 +22,30 @@ namespace Chips
         private int _scanLine;
         private int _cycle;
 
+        private bool _nonMaskableInterrupt;
+
+        private ControlRegister _controlRegister;
+        private MaskRegister _maskRegister;
+        private StatusRegister _statusRegister;
+
+        private byte _addressLatch = 0x00;
+        private byte _ppuDataBuffer = 0x00;
+        private LoopyRegister _vramAddress = new LoopyRegister();
+        private LoopyRegister _tramAddress = new LoopyRegister();
+        private byte _fineXScroll = 0x00;
+
+
+        private byte _bgNextTileId = 0x00;
+        private byte _bgNextTileAttribute = 0x00;
+        private byte _bgNextTileLsb = 0x00;
+        private byte _bgNextTileMsb = 0x00;
+
+
+        private int _bgShifterPatternLo = 0x0000;
+        private int _bgShifterPatternHi = 0x0000;
+        private int _bgShifterAttributeLo = 0x0000;
+        private int _bgShifterAttributeHi = 0x0000;
+
 
         [SupportedOSPlatform("windows")]
         public Ocl2C02()
@@ -30,7 +54,17 @@ namespace Chips
             _spriteNameTables = [new Bitmap(256, 240), new Bitmap(256, 240)];
             _spritePatternTables = [new Bitmap(128, 128), new Bitmap(128, 128)];
             _screenPalette = new Color[0x40];
+
+            _controlRegister = new ControlRegister();
+            _maskRegister = new MaskRegister();
+            _statusRegister = new StatusRegister();
             InitPallete();
+        }
+
+        public bool NonMaskableInterrupt
+        {
+            get => _nonMaskableInterrupt;
+            set => _nonMaskableInterrupt = value;
         }
 
         private ICartridge cartridge => _cartridge ?? throw new Exception("No cartridge inserted");
@@ -40,10 +74,202 @@ namespace Chips
             get => _frameComplete;
             set => _frameComplete = value;
         }
-        
 
+        private void IncrementScrollX()
+        {
+            if (_maskRegister.ShowBackground || _maskRegister.ShowSprites)
+            {
+                if (_vramAddress.CoarseX == 31)
+                {
+                    _vramAddress.CoarseX = 0;
+                    _vramAddress.NameTableX = ~_vramAddress.NameTableX;
+                }
+                else
+                {
+                    _vramAddress.CoarseX++;
+                }
+            }
+        }
+
+        private void IncrementScrollY()
+        {
+            if (_maskRegister.ShowBackground || _maskRegister.ShowSprites)
+            {
+                if (_vramAddress.FineY < 7)
+                {
+                    _vramAddress.FineY++;
+                }
+                else
+                {
+                    _vramAddress.FineY = 0;
+                    if (_vramAddress.CoarseY == 29)
+                    {
+                        _vramAddress.CoarseY = 0;
+                        _vramAddress.NameTableY = ~_vramAddress.NameTableY;
+                    }
+                    else if (_vramAddress.CoarseY == 31)
+                    {
+                        _vramAddress.CoarseY = 0;
+                    }
+                    else
+                    {
+                        _vramAddress.CoarseY++;
+                    }
+                }
+            }
+        }
+
+        private void TransferAddressX()
+        {
+            if (_maskRegister.ShowBackground || _maskRegister.ShowSprites)
+            {
+                _vramAddress.NameTableX = _tramAddress.NameTableX;
+                _vramAddress.CoarseX = _tramAddress.CoarseX;
+            }
+        }
+
+        private void TransferAddressY()
+        {
+            if (_maskRegister.ShowBackground || _maskRegister.ShowSprites)
+            {
+                _vramAddress.FineY = _tramAddress.FineY;
+                _vramAddress.NameTableY = _tramAddress.NameTableY;
+                _vramAddress.CoarseY = _tramAddress.CoarseY;
+            }
+        }
+
+        private void LoadBackgroundShifters()
+        {
+            _bgShifterPatternLo = (_bgShifterAttributeLo & 0xFF00) | _bgNextTileLsb;
+            _bgShifterPatternHi = (_bgShifterAttributeHi & 0xFF00) | _bgNextTileMsb;
+
+            _bgShifterAttributeLo = (_bgShifterAttributeLo & 0xFF00) | ((_bgNextTileAttribute & 0b01) > 0 ? 0xFF : 0x00);
+            _bgShifterAttributeHi = (_bgShifterAttributeHi & 0xFF00) | ((_bgNextTileAttribute & 0b10) > 0 ? 0xFF : 0x00);
+        }
+
+        private void UpdateShifters()
+        {
+            if (_maskRegister.ShowBackground)
+            {
+                _bgShifterPatternLo <<= 1;
+                _bgShifterPatternHi <<= 1;
+                _bgShifterAttributeLo <<= 1;
+                _bgShifterAttributeHi <<= 1;
+            }
+        }
+
+        [SupportedOSPlatform("windows")]
         public void Clock()
         {
+            if (_scanLine >= -1 && _scanLine < 240)
+            {
+                if (_scanLine == -1 && _cycle == 1)
+                {
+                    _statusRegister.VerticalBlank = false;
+                }
+
+                if ((_cycle >= 2 && _cycle < 258) || (_cycle >= 321 && _cycle < 338))
+                {
+                    UpdateShifters();
+                    int address;
+                    switch ((_cycle - 1) % 8)
+                    {
+                        case 0:
+                            LoadBackgroundShifters();
+                            _bgNextTileId = PpuRead(0x2000 | (_vramAddress.Value & 0x0FFF));
+                            break;
+                        case 2:
+                            address = 0x23C0 |
+                                            (_vramAddress.NameTableY << 11) |
+                                            (_vramAddress.NameTableX << 10) |
+                                            ((_vramAddress.CoarseY >> 2) << 3) |
+                                            (_vramAddress.CoarseX >> 2);
+                            _bgNextTileAttribute = PpuRead(address);
+
+                            if ((_vramAddress.CoarseY & 0x02) > 0)
+                            {
+                                _bgNextTileAttribute >>= 4;
+                            }
+
+                            if ((_vramAddress.CoarseX & 0x02) > 0)
+                            {
+                                _bgNextTileAttribute >>= 2;
+                            }
+
+                            _bgNextTileAttribute &= 0x03;
+
+                            break;
+                        case 4:
+
+                            address = (_controlRegister.BackgroundPatternTableAddress << 12)
+                                      + (_bgNextTileId << 4)
+                                      + _vramAddress.FineY
+                                      + 0;
+                            _bgNextTileLsb = PpuRead(address);
+
+                            break;
+                        case 6:
+                            address = (_controlRegister.BackgroundPatternTableAddress << 12)
+                                      + (_bgNextTileId << 4)
+                                      + _vramAddress.FineY
+                                      + 8;
+                            _bgNextTileLsb = PpuRead(address);
+
+                            break;
+                        case 7:
+
+                            IncrementScrollX();
+
+                            break;
+                    }
+                }
+
+                if (_cycle == 256)
+                {
+                    IncrementScrollY();
+                }
+
+                if (_cycle == 257)
+                {
+                    TransferAddressX();
+                }
+
+                if (_scanLine == -1 && _cycle >= 280 && _cycle < 305)
+                {
+                    TransferAddressY();
+                }
+            }
+
+            if (_scanLine == 240)
+            {
+                // Post Render Scanline
+            }
+
+            if (_scanLine == 241 && _cycle == 1)
+            {
+                _statusRegister.VerticalBlank = true;
+                if (_controlRegister.EnableNMI)
+                    _nonMaskableInterrupt = true;
+            }
+
+            byte bgPixel = 0x00;
+            byte bgPalette = 0x00;
+
+            if (_maskRegister.ShowBackground)
+            {
+                int bitMux = 0x8000 >> _fineXScroll;
+
+                int p0Pixel = (_bgShifterPatternLo & bitMux) > 0 ? 1 : 0;
+                int p1Pixel = (_bgShifterPatternHi & bitMux) > 0 ? 1 : 0;
+                bgPixel = (byte)((p1Pixel << 1) | p0Pixel);
+
+                int bgPal0 = (_bgShifterAttributeLo & bitMux) > 0 ? 1 : 0;
+                int bgPal1 = (_bgShifterAttributeHi & bitMux) > 0 ? 1 : 0;
+                bgPalette = (byte)((bgPal1 << 1) | bgPal0);
+
+
+            }
+            _spriteScreen.SetPixel(_cycle - 1, _scanLine, GetColorFromPaletteRam(bgPalette, bgPixel));
             _cycle++;
             if (_cycle >= 341)
             {
@@ -66,10 +292,15 @@ namespace Chips
             switch (address)
             {
                 case 0x0000: // Control 
+                    data = _controlRegister.Value;
                     break;
                 case 0x0001: // Mask
+                    data = _maskRegister.Value;
                     break;
                 case 0x0002: // Status
+                    data = (byte)((_statusRegister.Value & 0xE0) | (_ppuDataBuffer & 0x1F));
+                    _statusRegister.VerticalBlank = false;
+                    _addressLatch = 0;
                     break;
                 case 0x0003: // OAM Address
                     break;
@@ -80,6 +311,12 @@ namespace Chips
                 case 0x0006: // PPU Address
                     break;
                 case 0x0007: // PPU Data
+                    data = _ppuDataBuffer;
+                    _ppuDataBuffer = PpuRead(_vramAddress.Value);
+
+                    if (_vramAddress.Value > 0x3F00) data = _ppuDataBuffer;
+                    _vramAddress.Value += _controlRegister.IncrementMode ? 32 : 1;
+
                     break;
             }
 
@@ -91,8 +328,12 @@ namespace Chips
             switch (address)
             {
                 case 0x0000: // Control 
+                    _controlRegister.Value = value;
+                    _tramAddress.NameTableX = _controlRegister.NametableX;
+                    _tramAddress.NameTableY = _controlRegister.NametableY;
                     break;
                 case 0x0001: // Mask
+                    _maskRegister.Value = value;
                     break;
                 case 0x0002: // Status
                     break;
@@ -101,10 +342,35 @@ namespace Chips
                 case 0x0004: // OAM Data
                     break;
                 case 0x0005: // Scroll
+                    if (_addressLatch == 0)
+                    {
+                        _fineXScroll = (byte)(value & 0x07);
+                        _tramAddress.CoarseX = value >> 3;
+                        _addressLatch = 1;
+                    }
+                    else
+                    {
+                        _tramAddress.FineY = (byte)(value & 0x07);
+                        _tramAddress.CoarseY = value >> 3;
+                        _addressLatch = 0;
+                    }
                     break;
                 case 0x0006: // PPU Address
+                    if (_addressLatch == 0)
+                    {
+                        _tramAddress.Value = (_tramAddress.Value & 0x00FF) | (value << 8);
+                        _addressLatch = 1;
+                    }
+                    else
+                    {
+                        _tramAddress.Value = (_tramAddress.Value & 0xFF00) | value;
+                        _vramAddress.Value = _tramAddress.Value;
+                        _addressLatch = 0;
+                    }
                     break;
                 case 0x0007: // PPU Data
+                    PpuWrite(_vramAddress.Value, value);
+                    _vramAddress.Value += _controlRegister.IncrementMode ? 32 : 1;
                     break;
             }
         }
@@ -114,7 +380,7 @@ namespace Chips
             return _spriteNameTables[i];
         }
 
-         private Color GetColorFromPaletteRam(int palette, int pixel)
+        private Color GetColorFromPaletteRam(int palette, int pixel)
         {
             var colorAddress = 0x3F00 + (palette << 2) + pixel;
             byte value = PpuRead(colorAddress);
@@ -124,19 +390,19 @@ namespace Chips
         [SupportedOSPlatform("windows")]
         public Bitmap GetPatternTable(int i, int palette)
         {
-            for(int tileX = 0; i < 16; tileX++)
+            for (int tileX = 0; i < 16; tileX++)
             {
-                for(int tileY = 0; tileY < 16; tileY++)
+                for (int tileY = 0; tileY < 16; tileY++)
                 {
                     int offset = tileY * 256 + tileX * 16;
 
-                    for(int row = 0; row < 8; row++)
+                    for (int row = 0; row < 8; row++)
                     {
                         int address = i * 0x1000 + offset + row;
                         byte tileLSB = PpuRead(address);
                         byte tileMSB = PpuRead(address + 8);
 
-                        for(int col = 0; col < 8; col++)
+                        for (int col = 0; col < 8; col++)
                         {
                             int pixel = (tileLSB & 0x01) + (tileMSB & 0x01);
                             tileLSB >>= 1;
@@ -155,7 +421,7 @@ namespace Chips
 
         public Bitmap GetScreen()
         {
-           return _spriteScreen;
+            return _spriteScreen;
         }
 
         public void InsertCartridge(ICartridge cartridge)
@@ -165,22 +431,43 @@ namespace Chips
 
         public byte PpuRead(int address, bool readOnly = false)
         {
-            byte data = 0x00;
+           byte data = 0x00;
             address &= MEMORY_MASK;
 
-            var (success, _mappedAddress) = cartridge.PpuRead(address);
+            var (success, mappedData) = cartridge.PpuRead(address);
 
             if (success)
             {
-                return data;
+                return mappedData;
             }
             else if (address >= 0x0000 && address <= 0x1FFF)
             {
-                //data = patternTable[1, address];
+                //data = patternTable[]
             }
             else if (address >= 0x2000 && address <= 0x3EFF)
             {
-
+                if (cartridge.Mirror == Interfaces.Enums.MirrorMode.Vertical)
+                {
+                    if (address >= 0x0000 && address <= 0x03FF)
+                        data = _nameTable[0, address & 0x03FF];
+                    if (address >= 0x0400 && address <= 0x07FF)
+                        data = _nameTable[1, address & 0x03FF];
+                    if (address >= 0x0800 && address <= 0x0BFF)
+                        data = _nameTable[0, address & 0x03FF];
+                    if (address >= 0x0C00 && address <= 0x0FFF)
+                        data = _nameTable[1, address & 0x03FF];
+                }
+                else if (cartridge.Mirror == Interfaces.Enums.MirrorMode.Horizontal)
+                {
+                    if (address >= 0x0000 && address <= 0x03FF)
+                        data = _nameTable[0, address & 0x03FF];
+                    if (address >= 0x0400 && address <= 0x07FF)
+                        data = _nameTable[0, address & 0x03FF];
+                    if (address >= 0x0800 && address <= 0x0BFF)
+                        data = _nameTable[1, address & 0x03FF];
+                    if (address >= 0x0C00 && address <= 0x0FFF)
+                        data = _nameTable[1, address & 0x03FF];
+                }
             }
             else if (address >= 0x3F00 && address <= 0x3FFF)
             {
@@ -197,7 +484,7 @@ namespace Chips
 
         public void PpuWrite(int address, byte value)
         {
-            address &= MEMORY_MASK;
+             address &= MEMORY_MASK;
 
             if (cartridge.PpuWrite(address, value))
             {
@@ -209,7 +496,28 @@ namespace Chips
             }
             else if (address >= 0x2000 && address <= 0x3EFF)
             {
-
+                if (cartridge.Mirror == Interfaces.Enums.MirrorMode.Vertical)
+                {
+                    if (address >= 0x0000 && address <= 0x03FF)
+                        _nameTable[0, address & 0x03FF] = value;
+                    if (address >= 0x0400 && address <= 0x07FF)
+                        _nameTable[1, address & 0x03FF] = value;
+                    if (address >= 0x0800 && address <= 0x0BFF)
+                        _nameTable[0, address & 0x03FF] = value;
+                    if (address >= 0x0C00 && address <= 0x0FFF)
+                        _nameTable[1, address & 0x03FF] = value;
+                }
+                else if (cartridge.Mirror == Interfaces.Enums.MirrorMode.Horizontal)
+                {
+                    if (address >= 0x0000 && address <= 0x03FF)
+                        _nameTable[0, address & 0x03FF] = value;
+                    if (address >= 0x0400 && address <= 0x07FF)
+                        _nameTable[0, address & 0x03FF] = value;
+                    if (address >= 0x0800 && address <= 0x0BFF)
+                        _nameTable[1, address & 0x03FF] = value;
+                    if (address >= 0x0C00 && address <= 0x0FFF)
+                        _nameTable[1, address & 0x03FF] = value;
+                }
             }
             else if (address >= 0x3F00 && address <= 0x3FFF)
             {

@@ -127,12 +127,12 @@ public partial class FrMain : Form
 
         y += (size.Height + 2) * 7;
 
-        var code = _bus.Cpu.Disassemble(0x0000, 0xFFFF);
-        DrawCode(x, y, size, code, _bus.Cpu.ProgramCounter, 27, gfx);
+        //var code = _bus.Cpu.Disassemble(0x0000, 0xFFFF);
+        //DrawCode(x, y, size, code, _bus.Cpu.ProgramCounter, 27, gfx);
 
         var img = _bus.Ppu.GetScreen();
 
-        gfx.DrawImage(img, 10f, 10f);
+        //gfx.DrawImage(img, 10f, 10f);
 
         pictureBox.Image?.Dispose();
         pictureBox.Image = (Bitmap)bmp.Clone();
